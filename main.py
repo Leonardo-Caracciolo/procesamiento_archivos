@@ -1,6 +1,8 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox
-from mainwindow import Ui_MainWindow  # Importa la interfaz generada
+from mainwindow import Ui_MainWindow
+from services.folder_service import FolderProcessor
+from utils.app_logger import setup_logging
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -8,44 +10,44 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        # Variables para almacenar la carpeta, año y mes seleccionados
+        # Configuración inicial
+        setup_logging()
+        self.folder_processor = FolderProcessor()  # Inyección de dependencia
         self.selected_folder = ""
         self.selected_year = ""
         self.selected_month = ""
 
-        # Conectar botones a funciones
+        # Conectar botones
         self.ui.pushButton.clicked.connect(self.select_folder)
         self.ui.pushButton_2.clicked.connect(self.start_process)
-
-        # Tamaño fijo de la ventana
         self.setFixedSize(300, 300)
 
     def select_folder(self):
-        """Abre un cuadro de diálogo para seleccionar la carpeta."""
-        folder = QFileDialog.getExistingDirectory(self, "Seleccionar Carpeta")
+        """Permitir al usuario seleccionar la carpeta padre."""
+        folder = QFileDialog.getExistingDirectory(self, "Seleccionar Carpeta Padre")
         if folder:
             self.selected_folder = folder
             print(f"Carpeta seleccionada: {folder}")
 
     def start_process(self):
-        """Lógica para procesar el año y mes seleccionados."""
+        """Iniciar el procesamiento."""
         self.selected_year = self.ui.yearComboBox.currentText()
         self.selected_month = self.ui.comboBox.currentText()
 
-        # Validar selecciones
-        if self.selected_year == "Seleccionar Año" and self.selected_month == "Seleccionar mes":
+        # Validaciones iniciales
+        if self.selected_year == "Seleccionar Año" or self.selected_month == "Seleccionar mes":
             QMessageBox.warning(self, "Advertencia", "Por favor selecciona un año y un mes válidos.")
-        elif self.selected_year == "Seleccionar Año":
-            QMessageBox.warning(self, "Advertencia", "Por favor selecciona un año válido.")
-        elif self.selected_month == "Seleccionar mes":
-            QMessageBox.warning(self, "Advertencia", "Por favor selecciona un mes válido.")
-        elif not self.selected_folder:
+            return
+        if not self.selected_folder:
             QMessageBox.warning(self, "Advertencia", "Por favor selecciona una carpeta primero.")
-        else:
-            # Procesar la información seleccionada
-            result = f"Carpeta: {self.selected_folder}\nAño: {self.selected_year}\nMes: {self.selected_month}"
-            print(result)
-            QMessageBox.information(self, "Información Seleccionada", result)
+            return
+
+        # Procesar carpetas
+        try:
+            self.folder_processor.process(self.selected_folder, self.selected_year, self.selected_month)
+            QMessageBox.information(self, "Éxito", "El proceso se completó correctamente.")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Se produjo un error: {e}")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

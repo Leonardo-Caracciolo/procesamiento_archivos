@@ -1,5 +1,5 @@
 import pytest
-from excel_processor import process_excel
+from procesamiento_archivos.spreadsheet_processor import process_excel
 from exceptions import ExcelProcessingError
 
 def test_missing_columns():

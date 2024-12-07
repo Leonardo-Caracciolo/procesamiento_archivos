@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QVBoxLayout, QFileDialog, QMessageBox
 from widgets import create_button
-from excel_processor import insert_balance_formulas
+from procesamiento_archivos.spreadsheet_processor import insert_balance_formulas
 from file_processing import process_excel_and_folders
 
 def create_main_layout(parent):
