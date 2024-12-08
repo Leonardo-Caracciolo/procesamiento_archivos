@@ -26,6 +26,7 @@ class MainWindow(QMainWindow):
         self.setFixedSize(300, 300)
 
     def select_folder(self):
+
         """
         Opens a dialog box for selecting the parent folder.
 
