@@ -4,6 +4,7 @@ import fitz  # PyMuPDF para trabajar con PDFs
 from services.file_service import FileProcessor
 from utils.validation_utils import validate_year_month
 from PIL import Image
+import services.func_extrac_data as look_data
 
 # Diccionario para traducir meses entre inglés y español
 months_translator = {
@@ -91,7 +92,7 @@ class FolderProcessor:
                 continue
 
             # Verificar si el archivo es relevante
-            if not any(file_name.endswith(suffix + ".pdf") for suffix in ["EDD", "941", ""]):
+            if not any(file_name.endswith(suffix + ".pdf") for suffix in ["EDD", "941", f"{year}"]):
                 continue
 
             print(f"Procesando archivo: {os.path.abspath(file_path)}")
@@ -112,13 +113,15 @@ class FolderProcessor:
             pdf_document = fitz.open(file_path)
             extracted_text = ""
 
-            for page_number in range(len(pdf_document)):
-                page = pdf_document[page_number]
-                pix = page.get_pixmap(dpi=300)  # Renderizar página como imagen
-                image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-                extracted_text += pytesseract.image_to_string(image)
-
+            last_page_number = len(pdf_document) - 1
+            page = pdf_document[last_page_number]
+            # for page_number in range(len(pdf_document)):
+            # page = pdf_document[page_number]
+            pix = page.get_pixmap(dpi=600)  # Renderizar página como imagen
+            image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            extracted_text += pytesseract.image_to_string(image, lang='spa', config='--dpi 600')
             return extracted_text
+        
         except Exception as e:
             print(f"Error al procesar el archivo con OCR: {e}")
             return ""
@@ -127,17 +130,39 @@ class FolderProcessor:
         """
         Maneja los datos extraídos del texto según el tipo de archivo.
         """
+        # data_look_for_941 = {
+        #     'payment_amount' : (look_data.extract_payment_amount, 1),
+        #     'account_number' : (look_data.extract_account_number),
+        #     'payer_name' : (look_data.extract_payer_name)
+        # }
+
+        # data_look_for_EED = {
+        #     'payment_amount' : (look_data.extract_payment_amount, 1),
+        #     'account_number' : (look_data.extract_account_number),
+        #     'name' : (look_data.extract_name),
+        #     'payment_date': (look_data.extract_payment_date)
+        # }
+
+        type_file = file_name.replace('.pdf','.txt')
+        ruta_prueba = rf"C:\Users\seba\Desktop\Proyectos\Leonardo-Matias\procesamiento_archivos\Data\Output\{type_file}"
+
         if file_name.endswith("941.pdf"):
             print(f"Extrayendo datos de archivo 941: {file_name}")
-            # Lógica específica para archivos 941
+            data_to_extract = look_data.extract_payment_amount(text, 1)
+            data_to_extract = look_data.extract_account_number(text)
 
         elif file_name.endswith("EDD.pdf"):
             print(f"Extrayendo datos de archivo EDD: {file_name}")
-            # Lógica específica para archivos EDD
+            data_to_extract = ""
 
         else:
             print(f"Extrayendo datos de archivo de fecha simple: {file_name}")
-            # Lógica específica para manejar archivos de fechas simples
+            # Lógica específica para manejar archivos de fechas 
+            data_to_extract = text
+
+        
+        with open(ruta_prueba, 'w', encoding='utf-8') as archivo_txt:
+                archivo_txt.write(data_to_extract)
 
     def translate_month(self, month):
         """Traduce un mes entre inglés y español."""
