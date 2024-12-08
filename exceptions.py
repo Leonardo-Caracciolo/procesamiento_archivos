@@ -17,3 +17,10 @@ class OCRNotInstalledError(Exception):
     """Excepción cuando Tesseract OCR no está instalado."""
     def __init__(self):
         super().__init__("Tesseract OCR no está instalado. Por favor, instálalo para continuar.")
+class FileProcessingError(Exception):
+    """Excepción para errores relacionados con el procesamiento de archivos."""
+    pass
+
+class ExcelProcessingError(Exception):
+    """Excepción para errores relacionados con el procesamiento de Excel."""
+    pass

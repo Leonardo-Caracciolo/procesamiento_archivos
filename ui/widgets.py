@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QPushButton
-from styles import BUTTON_STYLE
+from ui.styles import BUTTON_STYLE  # Ajusta la ruta según tu estructura
 
 def create_button(text, function=None, style=None):
     """
@@ -9,16 +9,17 @@ def create_button(text, function=None, style=None):
     :param style: CSS para personalizar el botón.
     :return: QPushButton
     """
+    # Crear el botón con el texto proporcionado
     button = QPushButton(text)
-    button = QPushButton("Clic aquí")
-    button.setStyleSheet(BUTTON_STYLE)
     
-    # Conectar función al clic
-    if function:
-        button.clicked.connect(function)
-    
-    # Aplicar estilo CSS
+    # Aplicar estilo CSS (por defecto o personalizado)
     if style:
         button.setStyleSheet(style)
+    else:
+        button.setStyleSheet(BUTTON_STYLE)
+
+    # Conectar la función al clic, si se proporciona
+    if function:
+        button.clicked.connect(function)
     
     return button

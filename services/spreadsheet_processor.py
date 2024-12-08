@@ -1,5 +1,6 @@
 import pandas as pd
-from exceptions import ExcelProcessingError
+from openpyxl import load_workbook
+from exceptions import ExcelProcessingError  # Corregir el nombre de la excepción
 from PyQt5.QtWidgets import QFileDialog
 
 def process_excel(file_path):
@@ -25,9 +26,6 @@ def process_excel(file_path):
         print(f"Error al procesar el Excel: {e}")
     except Exception as e:
         print(f"Error inesperado al procesar el Excel: {e}")
-
-
-from openpyxl import load_workbook
 
 def insert_balance_formulas(parent):
     """
