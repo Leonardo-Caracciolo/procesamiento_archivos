@@ -6,6 +6,8 @@ from utils.validation_utils import validate_year_month
 from PIL import Image
 import services.func_extrac_data as look_data
 import pandas as pd
+import numpy as np
+
 
 # Diccionario para traducir meses entre inglés y español
 months_translator = {
@@ -39,6 +41,7 @@ class FolderProcessor:
         translated_month = self.translate_month(month)  # Traduce el mes al idioma necesario
         missing_folders = []
         df_weekly = pd.DataFrame()
+        df_filtrado = pd.DataFrame()
 
         for client_folder in os.listdir(parent_folder):
             client_path = os.path.join(parent_folder, client_folder)
@@ -54,13 +57,18 @@ class FolderProcessor:
 
             print(f"Procesando carpeta: {os.path.abspath(target_path)}")
             df_weekly = self.process_weekly_files(target_path, year, translated_month)
+        
+        df_weekly['fecha_pdf'] = df_weekly['fecha_pdf'].astype(int)
+        df_filtrado = self.group_by_weekly(df_weekly)
+        df_filtrado['federal_tax_941'] = df_filtrado['federal_tax_941'].str.replace('.', ',').astype(str)
+        df_filtrado['state_tax_edd'] = df_filtrado['state_tax_edd'].str.replace('.', ',').astype(str)
 
-        df_filtrado = df_weekly.groupby('fecha_pdf').agg({ 
-            'Name': 'first', 
-            'federal_tax_941': 'max', 
-            'state_tax_edd': 'max', 
-            '941_payment_amount': 'max', 
-            'EDD_payment_amount': 'max' }).reset_index()
+
+        df_filtrado['941_payment_amount'] = df_filtrado['941_payment_amount'].str.replace(',', '').astype(str)
+        df_filtrado['EDD_payment_amount'] = df_filtrado['EDD_payment_amount'].str.replace(',', '').astype(str)
+        df_filtrado['941_payment_amount'] = df_filtrado['941_payment_amount'].str.replace('.', ',').astype(str)
+        df_filtrado['EDD_payment_amount'] = df_filtrado['EDD_payment_amount'].str.replace('.', ',').astype(str)
+
 
         ruta_archivo_fil = r'Data\Output\datos_filtrados.xlsx'
         ruta_archivo = r'Data\Output\datos.xlsx'
@@ -162,8 +170,6 @@ class FolderProcessor:
                 return date_str
 
         type_file = file_name.replace('.pdf','.txt')
-        ruta_prueba = rf"C:\Users\seba\Desktop\Proyectos\Repo_Leo\procesamiento_archivos\Data\Output\{type_file}"
-        data_to_extract = ""
 
         if file_name.endswith("941.pdf"):
             print(f"*****************************************************")
@@ -173,8 +179,7 @@ class FolderProcessor:
                 'tipo_archivo': "941",
                 'fecha_pdf': file_name.replace('941.pdf', ''), 
                 'Name': look_data.extract_payer_name(text), 
-                '941_payment_amount': look_data.extract_payment_amount_941(text), 
-                'EDD_payment_amount': "0",
+                '941_payment_amount': look_data.extract_payment_amount_941(text),
                 'account_number': look_data.extract_account_number(text), 
                 'date_pay_settle': format_date(look_data.extract_settlement_date(text))
             }
@@ -186,8 +191,7 @@ class FolderProcessor:
             data = {
                 'tipo_archivo': "EDD",
                 'fecha_pdf': file_name.replace('EDD.pdf', ''), 
-                'Name': look_data.extract_name(text), 
-                '941_payment_amount': "0", 
+                'Name': look_data.extract_name(text),
                 'EDD_payment_amount': look_data.extract_payment_amount_edd(text, 2),
                 'account_number': look_data.extract_account_number(text), 
                 'date_pay_settle': format_date(look_data.extract_payment_date(text))
@@ -205,6 +209,7 @@ class FolderProcessor:
                 'federal_tax_941': look_data.extract_payment_amount_general_941(text),
                 'state_tax_edd': look_data.extract_payment_amount_general_edd(text)
             }
+
         # with open(ruta_prueba, 'w', encoding='utf-8') as archivo_txt:
         #         archivo_txt.write(text)
 
@@ -229,3 +234,29 @@ class FolderProcessor:
             log_file.write(f"{payroll_folder_name}/{month}\n")
             log_file.write(f"{year_folder_name}/{month}\n")
         print(f"Se ha generado un log de carpetas faltantes en: {log_path}")
+    
+    def group_by_weekly(self, dataframe):
+        # Obtener los valores únicos de la columna 'fecha_pdf'
+        fechas_unicas = dataframe['fecha_pdf'].unique().tolist()
+        
+        resultados = []
+
+        for fecha in fechas_unicas:
+            # Filtrar el DataFrame por la fecha actual
+            df_filtrado = dataframe[dataframe['fecha_pdf'] == fecha]
+            
+            # Inicializar diccionario para almacenar el primer valor no vacío de cada columna
+            resultado = {'fecha_pdf': fecha}
+            
+            # Obtener el primer valor no vacío o no NaN de cada columna
+            for columna in ['Name', 'federal_tax_941', 'state_tax_edd', '941_payment_amount', 'EDD_payment_amount']:
+                valores = df_filtrado[columna].replace('', np.nan).dropna()
+                resultado[columna] = valores.iloc[0] if not valores.empty else np.nan
+            
+            resultados.append(resultado)
+
+        # Convertir la lista de resultados en un DataFrame
+        df_resultado = pd.DataFrame(resultados)
+
+        return df_resultado
+
