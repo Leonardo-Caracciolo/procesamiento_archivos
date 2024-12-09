@@ -58,6 +58,9 @@ class FolderProcessor:
             print(f"Procesando carpeta: {os.path.abspath(target_path)}")
             df_weekly = self.process_weekly_files(target_path, year, translated_month)
         
+
+        # Guardamos los datos del cliente en el DataFrame 'df_weekly'
+        
         df_weekly['fecha_pdf'] = df_weekly['fecha_pdf'].astype(int)
         df_filtrado = self.group_by_weekly(df_weekly)
         df_filtrado['federal_tax_941'] = df_filtrado['federal_tax_941'].str.replace('.', ',').astype(str)
@@ -69,13 +72,13 @@ class FolderProcessor:
         df_filtrado['941_payment_amount'] = df_filtrado['941_payment_amount'].str.replace('.', ',').astype(str)
         df_filtrado['EDD_payment_amount'] = df_filtrado['EDD_payment_amount'].str.replace('.', ',').astype(str)
 
-
+        #! Verificar que no se pisen los archivos entre clientes
         ruta_archivo_fil = r'Data\Output\datos_filtrados.xlsx'
         ruta_archivo = r'Data\Output\datos.xlsx'
         
         df_filtrado.to_excel(ruta_archivo_fil, index=False)
-        df_weekly.to_excel(ruta_archivo, index=False)
-
+        df_weekly.to_excel(ruta_archivo, index=False, )
+        #! Verificar que no se pisen los archivos entre clientes
         if missing_folders:
             self._log_missing_folders(missing_folders, payroll_folder_name, year_folder_name, translated_month)
 
