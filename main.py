@@ -70,8 +70,6 @@
 #     window.show()
 #     sys.exit(app.exec_())
 
-
-
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox
 from services.folder_service import FolderProcessor
@@ -101,7 +99,7 @@ class MainWindow(QMainWindow):
 
     def select_folder(self):
         """
-        Abre un cuadro de diálogo para seleccionar la carpeta padre.
+        Abre un cuadro de diálogo para seleccionar la carpeta principal.
         """
         folder = QFileDialog.getExistingDirectory(self, "Seleccionar Carpeta Padre")
         if folder:
@@ -110,7 +108,7 @@ class MainWindow(QMainWindow):
 
     def start_process(self):
         """
-        Inicia el procesamiento de las carpetas seleccionadas.
+        Lógica para recorrer carpetas y procesar archivos.
         """
         self.selected_year = self.ui.yearComboBox.currentText()
         self.selected_month = self.ui.comboBox.currentText()
@@ -124,15 +122,17 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Advertencia", "Por favor selecciona una carpeta primero.")
             return
 
+        # Usar la carpeta seleccionada como carpeta de salida y definir el archivo de salida
+        output_folder = self.selected_folder
+        output_file = "datos_combinados.xlsx"
+
         # Procesar carpetas
         try:
-            output_folder = "L:/Procesamiento_PDF/procesamiento_archivos/Data/Output"
-            folder_processor = FolderProcessor(output_folder)
+            folder_processor = FolderProcessor(output_folder, output_file)
             folder_processor.process(self.selected_folder, self.selected_year, self.selected_month)
-            QMessageBox.information(self, "Éxito", "El procesamiento se completó correctamente.")
+            QMessageBox.information(self, "Éxito", "El procesamiento se completó con éxito.")
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Ocurrió un error: {e}")
-            print(f"Error: {e}")
+            QMessageBox.critical(self, "Error", f"Ocurrió un error durante el procesamiento: {str(e)}")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
