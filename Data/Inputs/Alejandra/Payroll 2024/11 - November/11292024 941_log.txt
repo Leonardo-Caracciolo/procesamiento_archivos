@@ -1,0 +1,4 @@
+Log de campos obtenidos para el archivo: 11292024 941.pdf
+==================================================
+tipo_archivo fecha_pdf                     Name 941_payment_amount account_number date_pay_settle
+         941 11292024  ALEJANDRA S FASHIÓON INC          41,179.84           5293      2024-12-04

@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QVBoxLayout, QFileDialog, QMessageBox
 from ui.widgets import create_button
 from services.spreadsheet_processor import insert_balance_formulas
-from services.folder_service import FolderProcessor
+from procesamiento_archivos.services.folder_service_no_borrar import FolderProcessor
 
 def create_main_layout(parent):
     """

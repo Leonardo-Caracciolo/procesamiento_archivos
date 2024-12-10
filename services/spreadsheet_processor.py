@@ -1,94 +1,74 @@
 import pandas as pd
-from openpyxl import Workbook
-from openpyxl.styles import Font, Alignment, PatternFill
-from openpyxl.utils.dataframe import dataframe_to_rows
-import os
-
+from openpyxl import load_workbook
+from openpyxl.styles import PatternFill
 
 class ExcelProcessor:
-    def process(self, df: pd.DataFrame, header_row: int, data_row: int, output_path: str):
-        """
-        Procesa un DataFrame, escribiéndolo en una hoja de Excel.
-        - Encabezados: Calibri 20, alineación inferior, fondo gris, color de letra negro.
-        - Datos: Calibri 12, alineación centrada.
-        - Ajusta automáticamente el ancho de las columnas.
-        """
+    def __init__(self, file_path):
+        self.file_path = file_path
+        self.sheet_name = "Resumen"
+        self.required_columns = {"tipo_archivo", "fecha_pdf", "account_number"}
+
+    def load_excel(self):
+        """Carga el archivo Excel y devuelve un DataFrame de la hoja especificada."""
         try:
-            # Crear un nuevo archivo Excel
-            wb = Workbook()
-            ws = wb.active
-            ws.title = "Data"
-
-            # Estilo de los encabezados
-            header_font = Font(name="Calibri", size=20, color="000000", bold=True)
-            header_fill = PatternFill(start_color="D3D3D3", end_color="D3D3D3", fill_type="solid")  # Gris
-            header_alignment = Alignment(horizontal="center", vertical="bottom")
-
-            # Escribir encabezados con formato
-            for col_num, column_name in enumerate(df.columns, start=1):
-                cell = ws.cell(row=header_row, column=col_num, value=column_name)
-                cell.font = header_font
-                cell.fill = header_fill
-                cell.alignment = header_alignment
-
-            # Escribir datos del DataFrame a partir de la fila indicada
-            for row in dataframe_to_rows(df, index=False, header=False):
-                ws.append(row)
-
-            # Aplicar estilo a las celdas de datos
-            for row in ws.iter_rows(min_row=data_row, max_row=ws.max_row, min_col=1, max_col=len(df.columns)):
-                for cell in row:
-                    cell.font = Font(name="Calibri", size=12)  # Fuente Calibri 12
-                    cell.alignment = Alignment(horizontal="center", vertical="center")  # Centrado
-
-            # Ajustar automáticamente el ancho de las columnas
-            self._adjust_column_widths(ws, df.columns)
-
-            # Guardar el archivo Excel en la ruta especificada
-            wb.save(output_path)
-            print(f"Archivo Excel guardado exitosamente en: {output_path}")
-
+            excel_data = pd.ExcelFile(self.file_path)
+            if self.sheet_name in excel_data.sheet_names:
+                return excel_data.parse(self.sheet_name)
+            else:
+                print(f"La hoja '{self.sheet_name}' no existe en el archivo.")
+                return None
         except Exception as e:
-            print(f"Error al procesar el archivo Excel: {e}")
+            print(f"Error al cargar el archivo Excel: {e}")
+            return None
 
+    def validate_columns(self, df):
+        """Valida que el DataFrame tenga las columnas requeridas."""
+        missing_columns = self.required_columns - set(df.columns)
+        if missing_columns:
+            print(f"Faltan las columnas requeridas: {missing_columns}")
+            return False
+        return True
 
-    def _adjust_column_widths(self, sheet, headers):
+    def find_discrepancies(self, df):
         """
-        Ajusta el ancho de las columnas automáticamente basado en el contenido más largo (incluye encabezados y celdas).
+        Encuentra las filas con discrepancias en la columna 'account_number'.
+        Identifica filas cuyo 'account_number' difiera del valor más común del grupo.
         """
-        for col_idx, column_cells in enumerate(sheet.columns, start=1):
-            max_length = 0
-            column = column_cells[0].column_letter  # Obtiene la letra de la columna
-            for cell in column_cells:
-                try:
-                    if cell.value:
-                        # Comparar longitud de texto en las celdas
-                        max_length = max(max_length, len(str(cell.value)))
-                except Exception as e:
-                    print(f"Error al calcular el ancho: {e}")
+        discrepancies = []
+        grouped = df.groupby(["fecha_pdf"])
+        for _, group_df in grouped:
+            if len(group_df["account_number"].unique()) > 1:
+                # Identificar el valor más común en el grupo
+                most_common = group_df["account_number"].mode()[0]
+                # Encontrar filas con valores diferentes al más común
+                discrepant_rows = group_df[group_df["account_number"] != most_common].index
+                discrepancies.extend(discrepant_rows.tolist())
+        return discrepancies
 
-            # Comparar con el encabezado explícitamente
-            max_length = max(max_length, len(headers[col_idx - 1]))
+    def highlight_rows(self, rows_to_highlight):
+        """Pinta de rojo las filas con discrepancias en la columna A usando openpyxl."""
+        try:
+            wb = load_workbook(self.file_path)
+            ws = wb[self.sheet_name]
+            red_fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
+            for idx in rows_to_highlight:
+                excel_row = idx + 2  # Ajustar índice de pandas a filas de Excel
+                ws[f"A{excel_row}"].fill = red_fill
+            # Guardar el archivo resaltado
+            output_path = self.file_path.replace(".xlsx", "_resaltado.xlsx")
+            wb.save(output_path)
+            print(f"El archivo procesado se ha guardado en: {output_path}")
+        except Exception as e:
+            print(f"Error al resaltar las filas en el archivo Excel: {e}")
 
-            # Ajustar ancho con un margen adicional
-            sheet.column_dimensions[column].width = max_length + 2
-
-
-# Ejemplo de uso
-if __name__ == "__main__":
-    # Crear un ejemplo de DataFrame
-    data = {
-        "Company": ["Company A", "Company B"],
-        "Check Date": ["2024-12-01", "2024-12-02"],
-        "Federal Tax Amount": [1000, 2000],  # Encabezado más largo para prueba
-        "State Tax": [300, 400],
-        "Additional Comments": ["This is a long comment.", "Short comment."],
-    }
-    df = pd.DataFrame(data)
-
-    # Ruta de salida en la carpeta del script
-    # output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output.xlsx")
-    output_path = r"L:\Procesamiento_PDF\procesamiento_archivos\Data\Inputs\salida.xlsx"
-    # Procesar el DataFrame y guardar el archivo Excel
-    processor = ExcelProcessor()
-    processor.process(df, header_row=1, data_row=2, output_path=output_path)
+    def process(self):
+        """Orquesta todas las operaciones para procesar el archivo Excel."""
+        df = self.load_excel()
+        if df is not None and self.validate_columns(df):
+            rows_to_highlight = self.find_discrepancies(df)
+            if rows_to_highlight:
+                self.highlight_rows(rows_to_highlight)
+            else:
+                print("No se encontraron discrepancias en 'account_number'.")
+        else:
+            print("El archivo no pudo ser procesado.")

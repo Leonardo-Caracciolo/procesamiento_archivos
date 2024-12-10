@@ -1,0 +1,4 @@
+Log de campos obtenidos para el archivo: 11012024.pdf
+==================================================
+tipo_archivo fecha_pdf                Name federal_tax_941 state_tax_edd
+     general  11012024 AVINA PRODUCE, INC.          546.52         72.92

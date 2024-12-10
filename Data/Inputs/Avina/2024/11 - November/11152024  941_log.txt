@@ -1,0 +1,4 @@
+Log de campos obtenidos para el archivo: 11152024  941.pdf
+==================================================
+tipo_archivo  fecha_pdf                         Name 941_payment_amount account_number date_pay_settle
+         941 11152024   AVINA PRODUCE TIN: xxxxx8949             546.52           7888      2024-11-20

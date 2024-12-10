@@ -1,0 +1,4 @@
+Log de campos obtenidos para el archivo: 11082024 EDD.pdf
+==================================================
+tipo_archivo fecha_pdf                       Name EDD_payment_amount account_number date_pay_settle
+         EDD 11082024  ALEJANDRA'S FASHIOÓN, INC.           4,416.39           None      2024-11-13
