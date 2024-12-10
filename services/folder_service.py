@@ -900,3 +900,4 @@ class FolderProcessor:
     def translate_month(self, month):
         """Traduce un mes entre inglés y español."""
         return months_translator.get(month, month)
+
