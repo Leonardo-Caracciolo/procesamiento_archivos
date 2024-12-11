@@ -346,3 +346,4 @@ class Ui_MainWindow(object):
                 "Éxito",
                 f"Procesando para el año {year} y el mes {month}..."
             )
+
