@@ -393,11 +393,25 @@ QProgressBar::chunk {
      <bool>false</bool>
     </property>
    </widget>
+   <widget class="QProgressBar" name="progressBar">
+    <property name="geometry">
+     <rect>
+      <x>50</x>
+      <y>282</y>
+      <width>201</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="value">
+     <number>24</number>
+    </property>
+   </widget>
    <zorder>comboBox</zorder>
    <zorder>pushButton</zorder>
    <zorder>yearComboBox</zorder>
    <zorder>pushButton_2</zorder>
    <zorder>pushButton_3</zorder>
+   <zorder>progressBar</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">

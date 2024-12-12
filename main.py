@@ -45,29 +45,6 @@ class MainWindow(QMainWindow):
         # Tamaño fijo de la ventana
         self.setFixedSize(300, 300)
 
-        # Añadir la barra de progreso en la status bar
-        self.progress_bar = QProgressBar(self)
-        self.progress_bar.setGeometry(QtCore.QRect(50, 230, 201, 24))
-        self.progress_bar.setProperty("value", 0)  # Valor inicial
-        self.progress_bar.setObjectName("progressBar")
-        self.progress_bar.setStyleSheet("""
-            QProgressBar {
-                border: 1px solid #3498db;
-                border-radius: 5px;
-                background-color: #ecf0f1;
-                text-align: center;
-                font-size: 14px;
-            }
-            QProgressBar::chunk {
-                background-color: #27ae60; /* Verde progresivo */
-                width: 20px;
-            }
-        """)
-
-        # Crear la barra de estado
-        self.statusbar = QStatusBar()
-        self.setStatusBar(self.statusbar)
-        self.statusbar.addWidget(self.progress_bar)
 
     def select_folder(self):
         """
@@ -107,21 +84,24 @@ class MainWindow(QMainWindow):
         self.worker.processCompleted.connect(self.on_process_completed)
 
         # Iniciar el procesamiento en segundo plano
-        self.progress_bar.setValue(0)
+        self.ui.progress_bar.setValue(0)
         self.worker.start()
+        self.ui.pushButton_2.setDisabled(True)
 
     def update_progress(self, value):
         """
         Actualizar la barra de progreso en la barra de estado.
         """
-        self.progress_bar.setValue(value)
+        self.ui.progress_bar.setValue(value)
 
     def on_process_completed(self):
         """
         Acción a realizar cuando el procesamiento se completa.
         """
-        self.progress_bar.setValue(100)
+        self.ui.progress_bar.setValue(100)
         QMessageBox.information(self, "Éxito", "El procesamiento se completó con éxito.")
+        self.ui.pushButton_2.setDisabled(False)
+        self.ui.progress_bar.setValue(0)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -131,7 +131,7 @@ class FolderProcessor(QObject):
         client_folders = [f for f in os.listdir(parent_folder) if os.path.isdir(os.path.join(parent_folder, f))]
         total_folders = len(client_folders)
         total_files = 0
-        processed_files = 0
+        self.processed_files = 0
 
         # Contar todos los archivos que se van a procesar
         for client_folder in client_folders:
@@ -149,7 +149,7 @@ class FolderProcessor(QObject):
                 continue
 
             print(f"Procesando carpeta: {os.path.abspath(target_path)}")
-            df_weekly = self.process_weekly_files(target_path, year, translated_month, total_files, processed_files)
+            df_weekly = self.process_weekly_files(target_path, year, translated_month, total_files, self.processed_files)
             combined_df = pd.concat([combined_df, df_weekly], ignore_index=True)
 
         df_modify = self.prepare_data(combined_df)
@@ -192,8 +192,8 @@ class FolderProcessor(QObject):
             df = pd.concat([df, datos], ignore_index=True)
 
             # Actualizar el progreso y emitir la señal
-            processed_files += 1
-            progress = int((processed_files / total_files) * 100)
+            self.processed_files += 1
+            progress = int((self.processed_files / total_files) * 100)
             self.progressChanged.emit(progress)
 
         return df
