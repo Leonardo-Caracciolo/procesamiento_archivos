@@ -100,6 +100,7 @@ import numpy as np
 import services.func_extrac_data as look_data  # Asegúrate de que esta ruta sea correcta
 from openpyxl import load_workbook
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
+import sys
 
 from PyQt5.QtCore import QObject, pyqtSignal, QThread
 
@@ -128,8 +129,16 @@ class FolderProcessor(QObject):
     
     def __init__(self, output_folder, output_file):
         super().__init__()  # Llamar al constructor de QObject
-        self.output_folder = output_folder  # Carpeta donde se guardarán los archivos
+        self.output_folder = os.path.join(output_folder)  # Carpeta donde se guardarán los archivos
         self.output_file = output_file  # Archivo Excel final
+
+        self.carpeta_ejecutable = os.path.dirname(sys.executable)
+        # self.carpeta_ejecutable = os.path.dirname(os.path.abspath(__file__))
+        self.folder_output_ejecutable_unificado = os.path.join(self.carpeta_ejecutable, "carpeta_clientes_unificados")
+        self.folder_output_ejecutable_clientes = os.path.join(self.carpeta_ejecutable, "carpeta_archivos_clientes")
+
+        os.makedirs(self.folder_output_ejecutable_unificado, exist_ok=True)  # Crear carpeta de salida si no existe
+        os.makedirs(self.folder_output_ejecutable_clientes, exist_ok=True)  # Crear carpeta de salida si no existe
         os.makedirs(output_folder, exist_ok=True)  # Crear carpeta de salida si no existe
 
     def process(self, parent_folder, year, month):
@@ -161,11 +170,19 @@ class FolderProcessor(QObject):
 
             print(f"Procesando carpeta: {os.path.abspath(target_path)}")
             df_weekly = self.process_weekly_files(target_path, year, translated_month, total_files, self.processed_files)
+
+            #! Prueba de excel por cliente
+            carpeta_cliente_nom = os.path.basename(os.path.dirname(os.path.dirname(target_path)))
+            df_cliente = self.prepare_data(df_weekly)
+            self.save_to_excel(os.path.join(self.folder_output_ejecutable_clientes, f"{carpeta_cliente_nom}.xlsx" ), df_cliente)
+            #! Prueba de excel por cliente
+
             combined_df = pd.concat([combined_df, df_weekly], ignore_index=True)
+            
 
         df_modify = self.prepare_data(combined_df)
         # Guardar todos los datos combinados en un solo archivo Excel
-        self.save_to_excel(os.path.join(self.output_folder, self.output_file), df_modify)
+        self.save_to_excel(os.path.join(self.folder_output_ejecutable_unificado, self.output_file), df_modify)
 
     def clean_path_segment(self, segment):
         # Reemplazar espacios en "mes-numero" para que quede "numero_mes+mes"
