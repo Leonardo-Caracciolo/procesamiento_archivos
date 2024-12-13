@@ -136,7 +136,7 @@ class FolderProcessor(QObject):
         payroll_folder_name = f"Payroll {year}"
         year_folder_name = str(year)
         translated_month = self.translate_month(month)  # Traduce el mes al idioma necesario
-        
+        month_number = self.get_month_number(month)
         combined_df = pd.DataFrame()
 
         client_folders = [f for f in os.listdir(parent_folder) if os.path.isdir(os.path.join(parent_folder, f))]
@@ -147,14 +147,14 @@ class FolderProcessor(QObject):
         # Contar todos los archivos que se van a procesar
         for client_folder in client_folders:
             client_path = os.path.join(parent_folder, client_folder)
-            target_path = self._get_target_path(client_path, payroll_folder_name, year_folder_name, translated_month)
+            target_path = self._get_target_path(client_path, year_folder_name, translated_month, month_number)
             if not target_path:
                 continue
             total_files += len([f for f in os.listdir(target_path) if any(f.endswith(suffix + ".pdf") for suffix in ["EDD", "941", f"{year}"])])
 
         for client_folder in client_folders:
             client_path = os.path.join(parent_folder, client_folder)
-            target_path = self._get_target_path(client_path, payroll_folder_name, year_folder_name, translated_month)
+            target_path = self._get_target_path(client_path, year_folder_name, translated_month, month_number)
             if not target_path:
                 print(f"No se encontró carpeta válida en: {os.path.abspath(client_path)}")
                 continue
@@ -170,21 +170,29 @@ class FolderProcessor(QObject):
     def clean_path_segment(self, segment):
         # Reemplazar espacios en "mes-numero" para que quede "numero_mes+mes"
         return segment.replace(" ", "")
+    
+    def _get_target_path(self, path, year, month, number):
 
-    def _get_target_path(self, client_path, payroll_folder_name, year_folder_name, month):
-        month_number = self.get_month_number(month)
-        possible_paths = [
-            os.path.join(client_path, payroll_folder_name, self.clean_path_segment(f"{month_number} - {month}")),
-            os.path.join(client_path, year_folder_name, self.clean_path_segment(f"{month_number} - {month}")),
-            os.path.join(client_path, payroll_folder_name, month),
-            os.path.join(client_path, year_folder_name, month),
-            os.path.join(client_path, f"{year_folder_name} - {month}")
-        ]
+        year_folder = None
+        
+        for root, dirs, files in os.walk(path):
+            for name in dirs:
+                if str(year) in name and "Payroll" in name:
+                    year_folder = os.path.join(root, name)
+                elif str(year) in name and "payroll" in name:
+                    year_folder = os.path.join(root, name)
+                elif str(year) in name:
+                        year_folder = os.path.join(root, name)
 
-        for path in possible_paths:
-            if os.path.exists(path):
-                return path
+        if year_folder is not None: 
+            for root, dirs, files in os.walk(year_folder):
+                for name in dirs:
+                    if str(number) in name and month in name:
+                        return os.path.join(root, name)
+                    elif str(number) in name:
+                        return os.path.join(root, name)
         return None
+
 
 
     def process_weekly_files(self, folder_path, year, month, total_files, processed_files):
@@ -222,9 +230,9 @@ class FolderProcessor(QObject):
             extracted_text = ""
             last_page_number = len(pdf_document) - 1
             page = pdf_document[last_page_number]
-            pix = page.get_pixmap(dpi=600)
+            pix = page.get_pixmap(dpi=1200)
             image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-            extracted_text += pytesseract.image_to_string(image, lang='spa', config='--dpi 600')
+            extracted_text += pytesseract.image_to_string(image, lang='spa', config='--dpi 1200')
             return extracted_text
         except Exception as e:
             print(f"Error al procesar el archivo con OCR: {e}")
@@ -232,6 +240,9 @@ class FolderProcessor(QObject):
 
     def handle_extracted_data(self, file_name, text, carpeta_cliente, month, year):
         def format_date(date_str):
+            if date_str is None:
+                return "0"
+            
             try:
                 return pd.to_datetime(date_str).strftime('%Y-%m-%d')
             except ValueError:

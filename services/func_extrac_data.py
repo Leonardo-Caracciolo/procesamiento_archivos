@@ -68,7 +68,7 @@ def extract_payment_date(text):
     match = re.search(pattern, text)
     if match:
         return match.group(1)
-    return None
+    return 'Payment Date no encontrado'
 
 # Regex para datos de EDD - Fin
 
