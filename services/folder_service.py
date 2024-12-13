@@ -113,6 +113,16 @@ months_translator = {
     "Septiembre": "September", "Octubre": "October", "Noviembre": "November", "Diciembre": "December"
 }
 
+months_numbers = {
+    "January": 1, "February": 2, "March": 3, "April": 4,
+    "May": 5, "June": 6, "July": 7, "August": 8,
+    "September": 9, "October": 10, "November": 11, "December": 12,
+    "Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4,
+    "Mayo": 5, "Junio": 6, "Julio": 7, "Agosto": 8,
+    "Septiembre": 9, "Octubre": 10, "Noviembre": 11, "Diciembre": 12
+}
+
+
 class FolderProcessor(QObject):
     progressChanged = pyqtSignal(int)
     
@@ -126,6 +136,7 @@ class FolderProcessor(QObject):
         payroll_folder_name = f"Payroll {year}"
         year_folder_name = str(year)
         translated_month = self.translate_month(month)  # Traduce el mes al idioma necesario
+        
         combined_df = pd.DataFrame()
 
         client_folders = [f for f in os.listdir(parent_folder) if os.path.isdir(os.path.join(parent_folder, f))]
@@ -156,10 +167,15 @@ class FolderProcessor(QObject):
         # Guardar todos los datos combinados en un solo archivo Excel
         self.save_to_excel(os.path.join(self.output_folder, self.output_file), df_modify)
 
+    def clean_path_segment(self, segment):
+        # Reemplazar espacios en "mes-numero" para que quede "numero_mes+mes"
+        return segment.replace(" ", "")
+
     def _get_target_path(self, client_path, payroll_folder_name, year_folder_name, month):
+        month_number = self.get_month_number(month)
         possible_paths = [
-            os.path.join(client_path, payroll_folder_name, f"11 - {month}"),
-            os.path.join(client_path, year_folder_name, f"11 - {month}"),
+            os.path.join(client_path, payroll_folder_name, self.clean_path_segment(f"{month_number} - {month}")),
+            os.path.join(client_path, year_folder_name, self.clean_path_segment(f"{month_number} - {month}")),
             os.path.join(client_path, payroll_folder_name, month),
             os.path.join(client_path, year_folder_name, month),
             os.path.join(client_path, f"{year_folder_name} - {month}")
@@ -169,6 +185,7 @@ class FolderProcessor(QObject):
             if os.path.exists(path):
                 return path
         return None
+
 
     def process_weekly_files(self, folder_path, year, month, total_files, processed_files):
         columnas = ['tipo_archivo', 'fecha_pdf', 'Name', 'federal_tax_941', 'state_tax_edd',
@@ -407,4 +424,7 @@ class FolderProcessor(QObject):
 
     def translate_month(self, month):
         return months_translator.get(month, month)
+    
+    def get_month_number(self, month): 
+        return months_numbers.get(month, "Mes desconocido")
     
