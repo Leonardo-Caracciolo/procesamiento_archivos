@@ -5,6 +5,8 @@ from services.folder_service import FolderProcessor
 from utils.app_logger import setup_logging
 from ui.mainwindow import Ui_MainWindow
 from PyQt5 import QtCore, QtWidgets
+import sys
+
 
 # Configurar logging
 setup_logging()

@@ -1,0 +1,4 @@
+Log de campos obtenidos para el archivo: 11222024 EDD.pdf
+==================================================
+tipo_archivo fecha_pdf              Name EDD_payment_amount account_number date_pay_settle
+         EDD 11222024  AVINA PRODUCE INC              72.92           None      2024-11-27
