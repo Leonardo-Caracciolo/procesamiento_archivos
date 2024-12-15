@@ -132,8 +132,8 @@ class FolderProcessor(QObject):
         self.output_folder = os.path.join(output_folder)  # Carpeta donde se guardarán los archivos
         self.output_file = output_file  # Archivo Excel final
 
-        self.carpeta_ejecutable = os.path.dirname(sys.executable)
-        # self.carpeta_ejecutable = os.path.dirname(os.path.abspath(__file__))
+        # self.carpeta_ejecutable = os.path.dirname(sys.executable)
+        self.carpeta_ejecutable = os.path.dirname(os.path.abspath(__file__))
         self.folder_output_ejecutable_unificado = os.path.join(self.carpeta_ejecutable, "carpeta_clientes_unificados")
         self.folder_output_ejecutable_clientes = os.path.join(self.carpeta_ejecutable, "carpeta_archivos_clientes")
 
@@ -142,7 +142,6 @@ class FolderProcessor(QObject):
         os.makedirs(output_folder, exist_ok=True)  # Crear carpeta de salida si no existe
 
     def process(self, parent_folder, year, month):
-        payroll_folder_name = f"Payroll {year}"
         year_folder_name = str(year)
         translated_month = self.translate_month(month)  # Traduce el mes al idioma necesario
         month_number = self.get_month_number(month)
@@ -212,12 +211,42 @@ class FolderProcessor(QObject):
 
 
 
+    # def process_weekly_files(self, folder_path, year, month, total_files, processed_files):
+    #     columnas = ['tipo_archivo', 'fecha_pdf', 'Name', 'federal_tax_941', 'state_tax_edd',
+    #                 '941_payment_amount', 'EDD_payment_amount', 'account_number', 'date_pay_settle', 'carpeta_cliente', 'ruta_archivo']
+    #     df = pd.DataFrame(columns=columnas)
+    #     carpeta_cliente = os.path.basename(os.path.dirname(os.path.dirname(folder_path)))
+    #     print(carpeta_cliente)
+    #     for file_name in os.listdir(folder_path):
+    #         file_path = os.path.join(folder_path, file_name)
+
+    #         if not os.path.isfile(file_path):
+    #             continue
+
+    #         if not any(file_name.endswith(suffix + ".pdf") for suffix in ["EDD", "941", f"{year}"]):
+    #             continue
+
+    #         print(f"Procesando archivo: {os.path.abspath(file_path)}")
+    #         text = self.process_file_with_ocr(file_path)
+    #         datos = self.handle_extracted_data(file_name, text, carpeta_cliente, file_path, month, year)
+
+    #         df = pd.concat([df, datos], ignore_index=True)
+
+    #         # Actualizar el progreso y emitir la señal
+    #         self.processed_files += 1
+    #         progress = int((self.processed_files / total_files) * 100)
+    #         self.progressChanged.emit(progress)
+
+    #     return df
+
     def process_weekly_files(self, folder_path, year, month, total_files, processed_files):
         columnas = ['tipo_archivo', 'fecha_pdf', 'Name', 'federal_tax_941', 'state_tax_edd',
-                    '941_payment_amount', 'EDD_payment_amount', 'account_number', 'date_pay_settle', 'carpeta_cliente']
+                        '941_payment_amount', 'EDD_payment_amount', 'account_number', 'date_pay_settle', 'carpeta_cliente']
         df = pd.DataFrame(columns=columnas)
         carpeta_cliente = os.path.basename(os.path.dirname(os.path.dirname(folder_path)))
         print(carpeta_cliente)
+
+        week_read = None
         for file_name in os.listdir(folder_path):
             file_path = os.path.join(folder_path, file_name)
 
@@ -226,10 +255,29 @@ class FolderProcessor(QObject):
 
             if not any(file_name.endswith(suffix + ".pdf") for suffix in ["EDD", "941", f"{year}"]):
                 continue
+            
+            # Validamos si hay archivos faltantes para la semana que estamos recorriendo
+            
+            week = file_name[:8]
+            look_files = (f"{week} EDD.pdf", f"{week} 941.pdf", f"{week}.pdf")
+            if week_read != week:
+                for file in look_files: # Ruta completa del archivo file_path = os.path.join(folder_path, file_name)
+                    file_possible_path = os.path.join(folder_path, file)
+                    if not os.path.isfile(file_possible_path): 
+                        print(f"El archivo {file} no existe.")
+                        df_no_files = pd.DataFrame([{
+                            'tipo_archivo': file.replace(f"{week} ","").replace(".pdf",""),
+                            'fecha_pdf': week,
+                            'carpeta_cliente': carpeta_cliente,
+                            'ruta_archivo' : "Archivo no encontrado"
+                        }])
+                        df = pd.concat([df, df_no_files], ignore_index=True)
+                        week_read = week
 
             print(f"Procesando archivo: {os.path.abspath(file_path)}")
+
             text = self.process_file_with_ocr(file_path)
-            datos = self.handle_extracted_data(file_name, text, carpeta_cliente, month, year)
+            datos = self.handle_extracted_data(file_name, text, carpeta_cliente, file_path,month, year)
 
             df = pd.concat([df, datos], ignore_index=True)
 
@@ -238,6 +286,7 @@ class FolderProcessor(QObject):
             progress = int((self.processed_files / total_files) * 100)
             self.progressChanged.emit(progress)
 
+        
         return df
 
 
@@ -255,7 +304,7 @@ class FolderProcessor(QObject):
             print(f"Error al procesar el archivo con OCR: {e}")
             return ""
 
-    def handle_extracted_data(self, file_name, text, carpeta_cliente, month, year):
+    def handle_extracted_data(self, file_name, text, carpeta_cliente, file_path, month, year):
         def format_date(date_str):
             if date_str is None:
                 return "0"
@@ -273,7 +322,8 @@ class FolderProcessor(QObject):
                 '941_payment_amount': look_data.extract_payment_amount_941(text),
                 'account_number': look_data.extract_account_number(text),
                 'date_pay_settle': format_date(look_data.extract_settlement_date(text)),
-                'carpeta_cliente': carpeta_cliente
+                'carpeta_cliente': carpeta_cliente,
+                'ruta_archivo' : file_path
             }])
         elif file_name.endswith("EDD.pdf"):
             return pd.DataFrame([{
@@ -283,7 +333,8 @@ class FolderProcessor(QObject):
                 'EDD_payment_amount': look_data.extract_payment_amount_edd(text, 2),
                 'account_number': look_data.extract_account_number(text),
                 'date_pay_settle': format_date(look_data.extract_payment_date(text)),
-                'carpeta_cliente': carpeta_cliente
+                'carpeta_cliente': carpeta_cliente,
+                'ruta_archivo' : file_path
             }])
         else:
             return pd.DataFrame([{
@@ -292,7 +343,8 @@ class FolderProcessor(QObject):
                 'Name': look_data.extract_company_name(text),
                 'federal_tax_941': look_data.extract_payment_amount_general_941(text),
                 'state_tax_edd': look_data.extract_payment_amount_general_edd(text),
-                'carpeta_cliente': carpeta_cliente
+                'carpeta_cliente': carpeta_cliente,
+                'ruta_archivo' : file_path
             }])
 
     def group_by_weekly(self, dataframe):
@@ -397,6 +449,34 @@ class FolderProcessor(QObject):
             print("Fórmulas ingresadas en el archivo Excel.")
         except Exception as e:
             print("Error al cargar la formula")
+    
+
+    def validation_data(self, path_file):
+        """
+        Indicamos resaltando con un color que archivos no fueron encontrados en sus carpetas
+        """
+        # Seleccionar archivo Excel
+        excel_path = path_file
+
+        # Abrir el archivo Excel con openpyxl
+        try:
+            wb = load_workbook(excel_path)
+            ws = wb['Datos combinados']
+
+            # Definir el color de fondo (amarillo)
+            color_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+            # Insertar fórmulas en las columnas H y I
+            for row in range(2, ws.max_row + 1):  # Asume que la fila 1 es el encabezado
+                if ws[f"K{row}"].value == "Archivo no encontrado":
+                    for col in range(1, 12): # Recorrer todas las celdas en la fila
+                        cell = ws.cell(row=row, column=col)
+                        cell.fill = color_fill
+    
+            # Guardar cambios
+            wb.save(excel_path)
+            print("Excel modificado con exito.")
+        except Exception as e:
+            print("Error al cargar la formula")
 
 
     def prepare_data(self, df):
@@ -449,6 +529,7 @@ class FolderProcessor(QObject):
         self.crossamounts(file_path)
         headers = ["Company","Check date","Federal Tax","State Tax","Payment date","941",'EDD', 'Balance 941', 'Balance EDD']
         self.format_excel_headers(file_path, headers)
+        self.validation_data(file_path)
 
     def translate_month(self, month):
         return months_translator.get(month, month)
