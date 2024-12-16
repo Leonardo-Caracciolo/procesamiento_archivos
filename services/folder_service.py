@@ -132,8 +132,8 @@ class FolderProcessor(QObject):
         self.output_folder = os.path.join(output_folder)  # Carpeta donde se guardarán los archivos
         self.output_file = output_file  # Archivo Excel final
 
-        # self.carpeta_ejecutable = os.path.dirname(sys.executable)
-        self.carpeta_ejecutable = os.path.dirname(os.path.abspath(__file__))
+        self.carpeta_ejecutable = os.path.dirname(sys.executable)
+        # self.carpeta_ejecutable = os.path.dirname(os.path.abspath(__file__))
         self.folder_output_ejecutable_unificado = os.path.join(self.carpeta_ejecutable, "carpeta_clientes_unificados")
         self.folder_output_ejecutable_clientes = os.path.join(self.carpeta_ejecutable, "carpeta_archivos_clientes")
 
@@ -296,9 +296,9 @@ class FolderProcessor(QObject):
             extracted_text = ""
             last_page_number = len(pdf_document) - 1
             page = pdf_document[last_page_number]
-            pix = page.get_pixmap(dpi=1200)
+            pix = page.get_pixmap(dpi=300)
             image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-            extracted_text += pytesseract.image_to_string(image, lang='spa', config='--dpi 1200')
+            extracted_text += pytesseract.image_to_string(image, lang='spa', config='--dpi 300')
             return extracted_text
         except Exception as e:
             print(f"Error al procesar el archivo con OCR: {e}")
