@@ -94,25 +94,4 @@ workbook.save(ruta_excel)
 
 print("Ancho de las columnas ajustado correctamente.")
 
-def process(self, df_dict: Dict[str, pd.DataFrame], header_row: int, data_row: int, start_row: int, output_path: str):
-        for sheet_name, df in df_dict.items():
-            # print(f"Procesando la hoja: {sheet_name}")
-            self.style_managers[sheet_name].load_styles(header_row, data_row)
-            self.inserters[sheet_name].insert_dataframe(df, start_row)
-            self._adjust_column_widths(self.loader.sheets[sheet_name])  # Ajustar el ancho de las columnas
-        self.saver.save(output_path)
-
-def _adjust_column_widths(self, sheet: Worksheet):
-    for col in sheet.columns:
-        max_length = 0
-        column = col[0].column_letter  # Obtiene la letra de la columna
-        for cell in col:
-            try:
-                if cell.value:
-                    max_length = max(max_length, len(str(cell.value)))
-            except:
-                pass
-        adjusted_width = (max_length + 2)
-        sheet.column_dimensions[column].width = adjusted_width
-
 

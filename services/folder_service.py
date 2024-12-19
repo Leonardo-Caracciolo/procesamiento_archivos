@@ -1,95 +1,3 @@
-# import os
-# import pytesseract
-# import fitz  # PyMuPDF para trabajar con PDFs
-# from PIL import Image
-# import pandas as pd
-# import numpy as np
-# import services.func_extrac_data as look_data  # Asegúrate de que esta ruta sea correcta
-# from openpyxl import load_workbook
-# from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
-
-# from PyQt5.QtCore import QObject, pyqtSignal
-
-
-
-# # Diccionario para traducir meses entre inglés y español
-# months_translator = {
-#     "January": "Enero", "February": "Febrero", "March": "Marzo", "April": "Abril",
-#     "May": "Mayo", "June": "Junio", "July": "Julio", "August": "Agosto",
-#     "September": "Septiembre", "October": "Octubre", "November": "Noviembre", "December": "Diciembre",
-#     "Enero": "January", "Febrero": "February", "Marzo": "March", "Abril": "April",
-#     "Mayo": "May", "Junio": "June", "Julio": "July", "Agosto": "August",
-#     "Septiembre": "September", "Octubre": "October", "Noviembre": "November", "Diciembre": "December"
-# }
-
-# class FolderProcessor(QObject):
-#     progressChanged = pyqtSignal(int)
-#     def __init__(self, output_folder, output_file):
-#         self.output_folder = output_folder  # Carpeta donde se guardarán los archivos
-#         self.output_file = output_file  # Archivo Excel final
-#         os.makedirs(output_folder, exist_ok=True)  # Crear carpeta de salida si no existe
-
-#     def process(self, parent_folder, year, month):
-#         payroll_folder_name = f"Payroll {year}"
-#         year_folder_name = str(year)
-#         translated_month = self.translate_month(month)  # Traduce el mes al idioma necesario
-#         combined_df = pd.DataFrame()
-
-#         for client_folder in os.listdir(parent_folder):
-#             client_path = os.path.join(parent_folder, client_folder)
-
-#             if not os.path.isdir(client_path):
-#                 continue
-
-#             target_path = self._get_target_path(client_path, payroll_folder_name, year_folder_name, translated_month)
-#             if not target_path:
-#                 print(f"No se encontró carpeta válida en: {os.path.abspath(client_path)}")
-#                 continue
-
-#             print(f"Procesando carpeta: {os.path.abspath(target_path)}")
-#             df_weekly = self.process_weekly_files(target_path, year, translated_month)
-#             combined_df = pd.concat([combined_df, df_weekly], ignore_index=True)
-
-#         df_modify = self.prepare_data(combined_df)
-#         # Guardar todos los datos combinados en un solo archivo Excel
-#         self.save_to_excel(os.path.join(self.output_folder, self.output_file), df_modify)
-
-#     def _get_target_path(self, client_path, payroll_folder_name, year_folder_name, month):
-#         possible_paths = [
-#             os.path.join(client_path, payroll_folder_name, f"11 - {month}"),
-#             os.path.join(client_path, year_folder_name, f"11 - {month}"),
-#             os.path.join(client_path, payroll_folder_name, month),
-#             os.path.join(client_path, year_folder_name, month),
-#             os.path.join(client_path, f"{year_folder_name} - {month}")
-#         ]
-
-#         for path in possible_paths:
-#             if os.path.exists(path):
-#                 return path
-#         return None
-
-#     def process_weekly_files(self, folder_path, year, month):
-#         columnas = ['tipo_archivo', 'fecha_pdf', 'Name', 'federal_tax_941', 'state_tax_edd',
-#                     '941_payment_amount', 'EDD_payment_amount', 'account_number', 'date_pay_settle','carpeta_cliente']
-#         df = pd.DataFrame(columns=columnas)
-#         carpeta_cliente = os.path.basename(os.path.dirname(os.path.dirname(folder_path)))
-#         print(carpeta_cliente)
-#         for file_name in os.listdir(folder_path):
-#             file_path = os.path.join(folder_path, file_name)
-
-#             if not os.path.isfile(file_path):
-#                 continue
-
-#             if not any(file_name.endswith(suffix + ".pdf") for suffix in ["EDD", "941", f"{year}"]):
-#                 continue
-
-#             print(f"Procesando archivo: {os.path.abspath(file_path)}")
-#             text = self.process_file_with_ocr(file_path)
-#             datos = self.handle_extracted_data(file_name, text, carpeta_cliente, month, year)
-
-#             df = pd.concat([df, datos], ignore_index=True)
-
-#         return df
 
 import os
 import pytesseract
@@ -104,6 +12,8 @@ from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 import sys
 
 from PyQt5.QtCore import QObject, pyqtSignal, QThread
+
+import cv2
 
 # Diccionario para traducir meses entre inglés y español
 months_translator = {
@@ -133,8 +43,8 @@ class FolderProcessor(QObject):
         self.output_folder = os.path.join(output_folder)  # Carpeta donde se guardarán los archivos
         self.output_file = output_file  # Archivo Excel final
 
-        self.carpeta_ejecutable = os.path.dirname(sys.executable)
-        # self.carpeta_ejecutable = os.path.dirname(os.path.abspath(__file__))
+        # self.carpeta_ejecutable = os.path.dirname(sys.executable)
+        self.carpeta_ejecutable = os.path.dirname(os.path.abspath(__file__))
         self.folder_output_ejecutable_unificado = os.path.join(self.carpeta_ejecutable, "output")
         # self.folder_output_ejecutable_clientes = os.path.join(self.carpeta_ejecutable, "carpeta_archivos_clientes")
 
@@ -281,6 +191,9 @@ class FolderProcessor(QObject):
             print(f"Procesando archivo: {os.path.abspath(file_path)}")
 
             text = self.process_file_with_ocr(file_path)
+            with open(os.path.join(folder_path, f'{file_name.replace('.pdf','.txt')}'), 'w', encoding='utf-8',) as txt_file:
+                txt_file.write(text)
+            
             datos = self.handle_extracted_data(file_name, text, carpeta_cliente, file_path,month, year)
 
             df = pd.concat([df, datos], ignore_index=True)

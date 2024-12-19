@@ -358,7 +358,8 @@ def extract_payer_name(text):
         r'TAXPAYER NAME:\s*(.*)',                      # Patrón secundario
         r'TAXPAYER NANE:\s*(.*?)(?=\s*TIN:)',          # Patrón alternativo en español
         r'Taxpayer Name:.*?(?=\s*ñ)',
-        r'Taxpayer Name: (.*?)(?=\s*ñ)'                # Patrón específico para tu texto proporcionado
+        r'Taxpayer Name: (.*?)(?=\s*ñ)',                # Patrón específico para tu texto proporcionado
+        r"Taxpayer Name:\s*(.*?)(?=\s*Taxpayer Type:)"
     ]
     
     for pattern in patterns:
@@ -374,7 +375,9 @@ def extract_payer_name(text):
 def extract_payment_amount_941(text):
     patterns = [
         r'Payment Amount\s+\$([0-9,]+\.\d{2})',
-        r'Payment Amount:\s*([\d,]+\.\d+)'
+        r'Payment Amount:\s*([\d,]+\.\d+)',
+        r"Payment Amount[;:]\s*\$\s*([\d.]+)",
+        r"Payment Amount[;:]\s*(?:\d)?([\d.]+)"
     ]
     
     for pattern in patterns:
@@ -459,8 +462,8 @@ def extract_payment_amount_edd(text, occurrence=2):
 
 def extract_name(text):
     patterns = [
-        r'Name:\s*(.*)',
-        r'(?m)^Name:\s*(.+)'
+        r'(?<!Bank\s)Name:\s*(.*)',
+        r'(?m)^(?<!Bank\s)Name:\s*(.+)'
     
     ]
     for pattern in patterns:
