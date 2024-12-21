@@ -444,7 +444,15 @@ class Ui_MainWindow(object):
             QPushButton:hover {
                 background-color: #27ae60;
             }
+            QPushButton:disabled {
+                background-color: #C0C0C0; /* Gris claro */
+                color: #808080; /* Gris oscuro */
+                font-size: 14px;
+                border-radius: 8px;
+                padding: 6px;
+            }
         """)
+
 
         # Barra de Progreso
         self.progress_bar = QtWidgets.QProgressBar(self.centralwidget)

@@ -1,10 +1,12 @@
 import logging
 import os
+import sys
 
 def setup_logging(log_file="app.log"):
     """Configurar el sistema de logging."""
     # Obtener la ruta completa del archivo de logs
-    log_dir = os.path.join(os.getcwd(), "logs")
+    log_dir = os.path.join(os.path.dirname(sys.executable), "logs")
+    # log_dir = os.path.join(os.getcwd(), "logs")
     os.makedirs(log_dir, exist_ok=True)
     log_path = os.path.join(log_dir, log_file)
 

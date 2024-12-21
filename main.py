@@ -75,7 +75,8 @@ class MainWindow(QMainWindow):
 
         # Usar la carpeta seleccionada como carpeta de salida y definir el archivo de salida
         output_folder = self.selected_folder
-        output_file = "datos_combinados.xlsx"
+        output_file = f"{self.selected_year}_{self.selected_month}_dataPDFs.xlsx"
+
 
         # Crear y configurar el procesador de carpetas
         self.folder_processor = FolderProcessor(output_folder, output_file)
