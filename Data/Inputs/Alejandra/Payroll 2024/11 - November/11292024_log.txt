@@ -1,4 +1,0 @@
-Log de campos obtenidos para el archivo: 11292024.pdf
-==================================================
-tipo_archivo fecha_pdf                   Name federal_tax_941 state_tax_edd
-     general  11292024 ALEJANDRAS FASHION INC        41179.84       5151.17

@@ -2,24 +2,36 @@ ALEJANDRAS FASHION INC (A03) Page 40
 
 Payroll Register Report
 From 11/04/2024 To 11/10/2024 Check Date: 11/15/2024
-
-Employee Name Employee 1D Date Check Number Net
+Employee Name Employee ID Date Check Number Net
 DEPARTMENT - ALL
 EMPLOYER'S EXPENSES ACTUAL
+
 Social Security 11142.51
+
 Medicare 2605.91
+
 Federal Unemployment 78.08
+
 State Unemployment 286.30
+
 Employment Training Fund Tax 13.01
+
 Worker's Comp. Expense 0.00
 TOTAL EMPLOYER'S EXPENSES 14125.81
 EMPLOYEE(S) DEDUCTIONS ACTUAL
+
 Federal W/H 11275.00
+
 Social Security 11142.51
+
 Medicare 2606.00
+
 State W/H 2517.56
+
 CA SDI 1976.86
+
 Garnish 297.50
+
 Calsavers 116.65
 TOTAL EMPLOYEE(S) DEDUCTIONS 29932.08
 TOTAL NET PAYROLL 149785.79

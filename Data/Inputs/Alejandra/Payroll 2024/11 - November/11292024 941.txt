@@ -1,49 +1,17 @@
-12/2/24, 11:04 AM
-
-TAXPAYER NAME: ALEJANDRA S FASHIÓON INC
-
+12/2/24, 11:04 AM Welcome To EFTPS - Payments
+TAXPAYER NAME: ALEJANDRA S FASHION INC TIN: xxxxx6163
 Deposit Confirmation
 Your payment has been accepted.
-
 Payment Successful
-
-Welcome To EFTPS - Payments
-
-TIN: xxxxx6163
-
 An EFT Acknowledgement Number has been provided for this payment. Please keep this number for your records.
-
 REMINDER: REMEMBER TO FILE ALL RETURNS WHEN DUE!
-
-EFT ACKNOWLEDGEMENT NUMBER:
-
-270473982289667
-
-Payment Information
-
-Entered Data
-
-Taxpayer EIN
-
-XXXxxXX0 163
-
-Tax Form 941 Employers Federal Tax
+EFT ACKNOWLEDGEMENT NUMBER: 270473982289667
+Payment Information Entered Data
+Taxpayer EIN XXXXxX6163
 Tax Type Federal Tax Deposit
-
-Tax Period Q4/2024
-
 Payment Amount $41,179.84
-
 Settlement Date 12/04/2024
-
-Account Number XOX0000X5293
-
+Account Number 00000X5293
 Account Type CHECKING
-
 Routing Number 122235821
-
-Bank Name US BANK NA
-
-https://www.eftps.gov/eftps/payments/payment-confirmation-flow?execution=e6s2
-
-11
+https://www.eftps.gov/eftps/payments/payment-confirmation-flow?execution=e6s2 1/1

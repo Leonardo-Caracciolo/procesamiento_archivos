@@ -1,4 +1,0 @@
-Log de campos obtenidos para el archivo: 11012024.pdf
-==================================================
-tipo_archivo fecha_pdf                   Name federal_tax_941 state_tax_edd
-     general  11012024 ALEJANDRAS FASHION INC        35783.00       4438.24

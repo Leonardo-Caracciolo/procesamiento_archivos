@@ -1,9 +1,7 @@
 AVINA PRODUCE, INC. (A12) Page 2
-
 Payroll Register Report
 From 11/11/2024 To 11/17/2024 Check Date: 11/22/2024
-
-Employee Name Employee 1D Date Check Number Net
+Employee Name Employee ID Date Check Number Net
 DEPARTMENT - ALL
 EMPLOYER'S EXPENSES ACTUAL
 Social Security 138.39
@@ -18,11 +16,10 @@ Federal W/H 205.00
 Social Security 138.39
 Medicare 32.37
 State W/H 52.83
-SDI 20.09
+SDi 20.09
 TOTAL EMPLOYEE(S) DEDUCTIONS 448.68
 TOTAL NET PAYROLL 1783.43
 TOTAL PAYROLL COST 2402.87
 TOTAL FEDERAL DEPOSIT 546.52
 TOTAL STATE DEPOSIT 72.92
-
 Prepared by Chermisqui 8 Associates 11/20/24 01:56 PM

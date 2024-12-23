@@ -1,41 +1,23 @@
-11/6/24, 1:56 PM eddservices.edd.ca.gov/tap/secure/eservices/_/Retrieve/0/Dc/zxncO zO7niaZeMtORY Lyw__?FILE_ =WEBHTML
-
+11/6/24, 1:56 PM eddservices.edd.ca.gov/tap/secure/eservices/ /Retrieve/0/Dc/zxncO_zO7niaZeMtORYLyw__?FILE__ =WEBHTML
 Payment Request Submitted
-
 Thank you. Your ACH Debit payment has been successfully submitted to the EDD.
-
 You may view, print, or withdraw this payment by clicking on the Submissions tab from your account, clicking
 on Submitted, then clicking on the link to your payment. Payments must be cancelled by 3 p.m., Pacific time,
 one day prior to the Bank Debit Date.
-
-Note: Your payment may display as two entries 1n the Submissions tab once processed. One entry 1s your
+Note: Your payment may display as two entries in the Submissions tab once processed. One entry 1s your
 submitted request and the other 1s your processed payment.
-
 Name: AVINA PRODUCE INC
-ID Type: Account 1D
-
+ID Type: Account ID
 ID: 027-8594-7
-
-Filing Period: 3 1-Dec-2024
-
+Filing Period: 31-Dec-2024
 Submitted: 06-Nov-2024
-
 Confirmation Number: 0-690-936-976
 Payment Amount: $72.92
-
 Bank Name: WELLS FARGO BANK NA
 Routing Number: 122000247
-
-Account Number: AR7 88
-
+Account Number: ****7888
 Payment Amount: $72.92
-
 Payment Date: 13-Nov-2024
-
 Please review your bank statement to confirm that this transaction was successful.
-
 You may print a copy for your records.
-
-https://eddservices.edd.ca.gov/tap/secure/eservices/_/Retrieve/0/Dc/zxncO_zO7niaZeMtORY Lyw__?FILE __ =WEBHTML
-
-11
+https://eddservices.edd.ca.gov/tap/secure/eservices/_/Retrieve/0/Dc/zxncO_zO7niaZeMtORY Lyw__?FILE__=WEBHTML 1/1

@@ -1,39 +1,17 @@
 11/20/24, 2:03 PM Welcome To EFTPS - Payments
-
 TAXPAYER NAME: AVINA PRODUCE TIN: xxxxx8949
-
 Deposit Confirmation
-
 Your payment has been accepted.
-
 Payment Successful
-
 An EFT Acknowledgement Number has been provided for this payment. Please keep this number for your records.
-
 REMINDER: REMEMBER TO FILE ALL RETURNS WHEN DUE!
-
 EFT ACKNOWLEDGEMENT NUMBER: 270473220948545
-
 Payment Information Entered Data
-Taxpayer EIN YXxxx8949
-
-Tax Form 941 Employers Federal Tax
+Taxpayer EIN Xxxx8949
 Tax Type Federal Tax Deposit
-
-Tax Period Q4/2024
-
 Payment Amount $546.52
-
 Settlement Date 11/27/2024
-
-Account Number XXXXxx7888
-
+Account Number XXX0Xx7888
 Account Type CHECKING
-
 Routing Number 122000247
-
-Bank Name WELLS FARGO BANK NA
-
-https://www.eftps.gov/eftps/payments/payment-confirmation-flow?execution=e2s3
-
-11
+https://www.eftps.gov/eftps/payments/payment-confirmation-flow?execution=e2s3 1/1
