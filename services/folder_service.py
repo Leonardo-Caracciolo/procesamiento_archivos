@@ -181,8 +181,13 @@ class FolderProcessor(QObject):
         self.save_to_excel(output_file_path, df_modify)
 
         # Guardar los datos de Master en la hoja 'Master'
+        # if not combined_master_df.empty:
+        #     self.save_master_to_excel(output_file_path, combined_master_df)
         if not combined_master_df.empty:
             self.save_master_to_excel(output_file_path, combined_master_df)
+
+        # Actualizar 'Master' con las comparaciones
+        self.update_master_with_comparisons(output_file_path)
 
     
     def clean_path_segment(self, segment):
@@ -388,6 +393,91 @@ class FolderProcessor(QObject):
     #     # Convertir master_data a DataFrame
     #     df_master = pd.DataFrame(master_data, columns=["Company", "TOTAL FEDERAL TAX LIABILITY", "TOTAL STATE TAX"])
     #     return df, df_master
+    def update_master_with_comparisons(self, file_path):
+        try:
+            # Cargar el archivo Excel
+            wb = load_workbook(file_path)
+            ws_resumen = wb['Resumen']
+            ws_master = wb['Master']
+
+            # Crear un diccionario para almacenar las sumas por cliente
+            resumen_sums = {}
+            for row in range(2, ws_resumen.max_row + 1):  # Asume que la fila 1 es el encabezado
+                company = ws_resumen[f"A{row}"].value  # Columna 'Company'
+                federal_tax = ws_resumen[f"C{row}"].value  # Columna 'Federal Tax'
+                state_tax = ws_resumen[f"D{row}"].value  # Columna 'State Tax'
+
+                # Convertir valores a float si no son nulos
+                federal_tax = float(federal_tax.replace(",", "").strip()) if federal_tax else 0
+                state_tax = float(state_tax.replace(",", "").strip()) if state_tax else 0
+
+                if company not in resumen_sums:
+                    resumen_sums[company] = {"Federal Tax": 0, "State Tax": 0}
+
+                resumen_sums[company]["Federal Tax"] += federal_tax
+                resumen_sums[company]["State Tax"] += state_tax
+
+            # Agregar columnas adicionales en la hoja 'Master'
+            if "Total Federal Resumen" not in [cell.value for cell in ws_master[1]]:
+                ws_master.cell(row=1, column=ws_master.max_column + 1, value="Total Federal Resumen")
+                ws_master.cell(row=1, column=ws_master.max_column + 1, value="Total State Resumen")
+
+            col_federal_resumen = ws_master.max_column - 1
+            col_state_resumen = ws_master.max_column
+
+            # Actualizar la hoja 'Master'
+            for row in range(2, ws_master.max_row + 1):  # Asume que la fila 1 es el encabezado
+                company = ws_master[f"A{row}"].value  # Columna 'Company'
+                total_federal_tax = ws_master[f"B{row}"].value  # Columna 'TOTAL FEDERAL TAX LIABILITY'
+                total_state_tax = ws_master[f"C{row}"].value  # Columna 'TOTAL STATE TAX'
+
+                # Convertir valores a float si no son nulos
+                total_federal_tax = float(total_federal_tax.replace(",", "").strip()) if total_federal_tax else 0
+                total_state_tax = float(total_state_tax.replace(",", "").strip()) if total_state_tax else 0
+
+                federal_sum = resumen_sums.get(company, {}).get("Federal Tax", 0)
+                state_sum = resumen_sums.get(company, {}).get("State Tax", 0)
+
+                # Actualizar los valores de resumen en las nuevas columnas
+                ws_master.cell(row=row, column=col_federal_resumen).value = federal_sum
+                ws_master.cell(row=row, column=col_state_resumen).value = state_sum
+
+                # Comparar y actualizar las columnas de coincidencia
+                # ws_master[f"D{row}"] = "Sí" if abs(federal_sum - total_federal_tax) < 0.01 else "No"
+                ws_master[f"D{row}"] = "Sí" if abs(federal_sum - total_federal_tax) < 1 else "No"
+                ws_master[f"E{row}"] = "Sí" if abs(state_sum - total_state_tax) < 1 else "No"
+                # ws_master[f"E{row}"] = "Sí" if abs(state_sum - total_state_tax) < 0.01 else "No"
+
+            # Reordenar las columnas
+            headers = [
+                "Company",
+                "TOTAL FEDERAL TAX LIABILITY",
+                "Total Federal Resumen",
+                "COINCIDE MONTO FEDERAL",
+                "TOTAL STATE TAX",
+                "Total State Resumen",
+                "COINCIDE MONTO STATE"
+            ]
+
+            # Crear un nuevo DataFrame con el orden deseado
+            data = [[cell.value for cell in row] for row in ws_master.iter_rows()]
+            df = pd.DataFrame(data[1:], columns=data[0])  # Usar la primera fila como encabezados
+            df = df[headers]  # Reordenar las columnas según la lista
+
+            # Sobrescribir la hoja "Master" con las columnas reordenadas
+            for col_num, header in enumerate(headers, start=1):
+                ws_master.cell(row=1, column=col_num, value=header)
+
+            for row_num, row_data in enumerate(df.values, start=2):
+                for col_num, cell_value in enumerate(row_data, start=1):
+                    ws_master.cell(row=row_num, column=col_num, value=cell_value)
+
+            # Guardar los cambios
+            wb.save(file_path)
+            print(f"Hoja 'Master' actualizada y columnas reordenadas en {file_path}")
+        except Exception as e:
+            print(f"Error actualizando la hoja 'Master': {e}")
+
 
     def process_weekly_files(self, folder_path, year, month, total_files, processed_files):
         columnas = ['tipo_archivo', 'fecha_pdf', 'Name', 'federal_tax_941', 'state_tax_edd',
