@@ -401,10 +401,8 @@ def extract_account_number(text):
             if match:
                 # print("Regex usada:", pattern)
                 if i == 0:  # Si es la primera regex
-                    print("Group 0 (completo):", match.group(0))
                     return match.group(0)  # Devuelve todo el texto capturado
                 elif i == 1 and match.group(1):  # Si es la segunda regex y el grupo 1 existe
-                    print("Group 1 (relevante):", match.group(1))
                     return match.group(1)  # Devuelve la parte específica capturada
         except IndexError:
             continue  # Si el grupo no existe, sigue al siguiente patrón

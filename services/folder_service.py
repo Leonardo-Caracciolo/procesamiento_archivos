@@ -13,7 +13,6 @@ import sys
 import re
 from PyQt5.QtCore import QObject, pyqtSignal, QThread
 
-import cv2
 
 # Diccionario para traducir meses entre inglés y español
 months_translator = {
@@ -43,8 +42,8 @@ class FolderProcessor(QObject):
         self.output_folder = os.path.join(output_folder)  # Carpeta donde se guardarán los archivos
         self.output_file = output_file  # Archivo Excel final
 
-        # self.carpeta_ejecutable = os.path.dirname(sys.executable)
-        self.carpeta_ejecutable = os.path.dirname(os.path.abspath(__file__))
+        self.carpeta_ejecutable = os.path.dirname(sys.executable)
+        # self.carpeta_ejecutable = os.path.dirname(os.path.abspath(__file__))
         self.folder_output_ejecutable_unificado = os.path.join(self.carpeta_ejecutable, "output")
         # self.folder_output_ejecutable_clientes = os.path.join(self.carpeta_ejecutable, "carpeta_archivos_clientes")
 
@@ -98,49 +97,6 @@ class FolderProcessor(QObject):
         except Exception as e:
             log.log_error(f"Error guardando los datos de Master en Excel: {e}")
 
-
-    # def process(self, parent_folder, year, month):
-    #     year_folder_name = str(year)
-    #     translated_month = self.translate_month(month)  # Traduce el mes al idioma necesario
-    #     month_number = self.get_month_number(month)
-    #     combined_df = pd.DataFrame()
-
-    #     client_folders = [f for f in os.listdir(parent_folder) if os.path.isdir(os.path.join(parent_folder, f))]
-    #     total_folders = len(client_folders)
-    #     total_files = 0
-    #     self.processed_files = 0
-
-    #     # Contar todos los archivos que se van a procesar
-    #     for client_folder in client_folders:
-    #         client_path = os.path.join(parent_folder, client_folder)
-    #         target_path = self._get_target_path(client_path, year_folder_name, translated_month, month_number)
-    #         if not target_path:
-    #             log.log_info(f"No se encontró carpeta válida en: {os.path.abspath(client_path)}")
-    #             continue
-    #         total_files += len([f for f in os.listdir(target_path) if any(f.endswith(suffix + ".pdf") for suffix in ["EDD", "941", f"{year}"])])
-
-    #     for client_folder in client_folders:
-    #         client_path = os.path.join(parent_folder, client_folder)
-    #         target_path = self._get_target_path(client_path, year_folder_name, translated_month, month_number)
-    #         if not target_path:
-    #             # print(f"No se encontró carpeta válida en: {os.path.abspath(client_path)}")
-    #             continue
-
-    #         print(f"Procesando carpeta: {os.path.abspath(target_path)}")
-    #         df_weekly = self.process_weekly_files(target_path, year, translated_month, total_files, self.processed_files)
-
-    #         #! Prueba de excel por cliente
-    #         # carpeta_cliente_nom = os.path.basename(os.path.dirname(os.path.dirname(target_path)))
-    #         # df_cliente = self.prepare_data(df_weekly)
-    #         # self.save_to_excel(os.path.join(self.folder_output_ejecutable_clientes, f"{carpeta_cliente_nom}.xlsx" ), df_cliente)
-    #         #! Prueba de excel por cliente
-
-    #         combined_df = pd.concat([combined_df, df_weekly], ignore_index=True)
-            
-
-    #     df_modify = self.prepare_data(combined_df)
-    #     # Guardar todos los datos combinados en un solo archivo Excel
-    #     self.save_to_excel(os.path.join(self.folder_output_ejecutable_unificado, self.output_file), df_modify)
     def process(self, parent_folder, year, month):
         year_folder_name = str(year)
         translated_month = self.translate_month(month)
@@ -216,183 +172,6 @@ class FolderProcessor(QObject):
                         return os.path.join(root, name)
         return None
 
-
-    # def process_weekly_files(self, folder_path, year, month, total_files, processed_files):
-    #     columnas = ['tipo_archivo', 'fecha_pdf', 'Name', 'federal_tax_941', 'state_tax_edd',
-    #                     '941_payment_amount', 'EDD_payment_amount', 'account_number', 'date_pay_settle', 'carpeta_cliente']
-    #     df = pd.DataFrame(columns=columnas)
-    #     carpeta_cliente = os.path.basename(os.path.dirname(os.path.dirname(folder_path)))
-    #     print(carpeta_cliente)
-
-    #     week_read = None
-    #     for file_name in os.listdir(folder_path):
-    #         file_path = os.path.join(folder_path, file_name)
-
-    #         if not os.path.isfile(file_path):
-    #             continue
-
-    #         # Verificar si los primeros 8 dígitos del nombre del archivo son numéricos
-    #         if not file_name[:8].isdigit():
-    #             continue
-
-    #         # Verificar la longitud del nombre del archivo sin la extensión
-    #         nombre_sin_extension = os.path.splitext(file_name)[0]
-    #         if len(nombre_sin_extension) > 12:
-    #             continue
-
-    #         if not any(file_name.endswith(suffix + ".pdf") for suffix in ["EDD", "941", f"{year}"]):
-    #             continue
-
-    #         if any(file_name.endswith(suffix + ".pdf") for suffix in ["EDD", "941"]):
-    #             caracter_nueve = file_name[8]
-    #             if caracter_nueve != ' ':
-    #                 continue
-    #         elif any(file_name.endswith(suffix + ".pdf") for suffix in [f"{year}"]):
-    #             caracter_nueve = file_name[8]
-    #             if caracter_nueve != '.':
-    #                 continue
-            
-    #         # Validamos si hay archivos faltantes para la semana que estamos recorriendo
-            
-    #         week = file_name[:8]
-    #         look_files = (f"{week} EDD.pdf", f"{week} 941.pdf", f"{week}.pdf")
-    #         if week_read != week:
-    #             for file in look_files: # Ruta completa del archivo file_path = os.path.join(folder_path, file_name)
-    #                 file_possible_path = os.path.join(folder_path, file)
-    #                 if not os.path.isfile(file_possible_path): 
-    #                     # print(f"El archivo {file} no existe.")
-    #                     log.log_info(f"El archivo {file} no existe en la carpeta {folder_path}")
-    #                     tipo_archivo = file.replace(f"{week} ", "").replace(".pdf", "")
-    #                     tipo_archivo = 'General' if tipo_archivo == week else tipo_archivo
-    #                     df_no_files = pd.DataFrame([{
-    #                         'tipo_archivo': tipo_archivo,
-    #                         'fecha_pdf': week,
-    #                         'carpeta_cliente': carpeta_cliente,
-    #                         'ruta_archivo' : "Archivo no encontrado"
-    #                     }])
-    #                     # Agregar las columnas específicas dependiendo del tipo de archivo
-    #                     if tipo_archivo == "EDD":
-    #                         df_no_files['EDD_payment_amount'] = "Archivo no encontrado"
-    #                     elif tipo_archivo == "941":
-    #                         df_no_files['941_payment_amount'] = "Archivo no encontrado"
-    #                     elif tipo_archivo == "General":
-    #                         df_no_files['federal_tax_941'] = "Archivo no encontrado"
-    #                         df_no_files['state_tax_edd'] = "Archivo no encontrado"
-
-
-    #                     df = pd.concat([df, df_no_files], ignore_index=True)
-    #                     week_read = week
-
-    #         print(f"Procesando archivo: {os.path.abspath(file_path)}")
-
-    #         text = self.process_file_with_ocr(file_path)
-    #         with open(os.path.join(folder_path, f'{file_name.replace('.pdf','.txt')}'), 'w', encoding='utf-8',) as txt_file:
-    #             txt_file.write(text)
-            
-    #         datos = self.handle_extracted_data(file_name, text, carpeta_cliente, file_path,month, year)
-
-    #         df = pd.concat([df, datos], ignore_index=True)
-
-    #         # Actualizar el progreso y emitir la señal
-    #         self.processed_files += 1
-    #         progress = int((self.processed_files / total_files) * 100)
-    #         self.progressChanged.emit(progress)
-
-    #     return df
-
-#Funciona y agrega el Master
-    # def process_weekly_files(self, folder_path, year, month, total_files, processed_files):
-    #     columnas = ['tipo_archivo', 'fecha_pdf', 'Name', 'federal_tax_941', 'state_tax_edd',
-    #                 '941_payment_amount', 'EDD_payment_amount', 'account_number', 'date_pay_settle', 'carpeta_cliente']
-    #     df = pd.DataFrame(columns=columnas)
-    #     master_data = []  # Para almacenar los datos de Master.pdf
-    #     carpeta_cliente = os.path.basename(os.path.dirname(folder_path))
-    #     print(carpeta_cliente)
-
-    #     week_read = None
-
-    #     for file_name in os.listdir(folder_path):
-    #         file_path = os.path.join(folder_path, file_name)
-
-    #         if not os.path.isfile(file_path):
-    #             continue
-
-    #         # Procesar Master.pdf si está en el directorio
-    #         if file_name == "Master.pdf":
-    #             federal_tax, state_tax = self.process_master_pdf(file_path)
-    #             master_data.append({
-    #                 "Company": carpeta_cliente,
-    #                 "TOTAL FEDERAL TAX LIABILITY": federal_tax,
-    #                 "TOTAL STATE TAX": state_tax
-    #             })
-    #             continue
-
-    #         # Verificar si los primeros 8 dígitos del nombre del archivo son numéricos
-    #         if not file_name[:8].isdigit():
-    #             continue
-
-    #         # Verificar la longitud del nombre del archivo sin la extensión
-    #         nombre_sin_extension = os.path.splitext(file_name)[0]
-    #         if len(nombre_sin_extension) > 12:
-    #             continue
-
-    #         if not any(file_name.endswith(suffix + ".pdf") for suffix in ["EDD", "941", f"{year}"]):
-    #             continue
-
-    #         if any(file_name.endswith(suffix + ".pdf") for suffix in ["EDD", "941"]):
-    #             caracter_nueve = file_name[8]
-    #             if caracter_nueve != ' ':
-    #                 continue
-    #         elif any(file_name.endswith(suffix + ".pdf") for suffix in [f"{year}"]):
-    #             caracter_nueve = file_name[8]
-    #             if caracter_nueve != '.':
-    #                 continue
-
-    #         # Validamos si hay archivos faltantes para la semana que estamos recorriendo
-    #         week = file_name[:8]
-    #         look_files = (f"{week} EDD.pdf", f"{week} 941.pdf", f"{week}.pdf")
-    #         if week_read != week:
-    #             for file in look_files:
-    #                 file_possible_path = os.path.join(folder_path, file)
-    #                 if not os.path.isfile(file_possible_path):
-    #                     log.log_info(f"El archivo {file} no existe en la carpeta {folder_path}")
-    #                     tipo_archivo = file.replace(f"{week} ", "").replace(".pdf", "")
-    #                     tipo_archivo = 'General' if tipo_archivo == week else tipo_archivo
-    #                     df_no_files = pd.DataFrame([{
-    #                         'tipo_archivo': tipo_archivo,
-    #                         'fecha_pdf': week,
-    #                         'carpeta_cliente': carpeta_cliente,
-    #                         'ruta_archivo': "Archivo no encontrado"
-    #                     }])
-    #                     # Agregar las columnas específicas dependiendo del tipo de archivo
-    #                     if tipo_archivo == "EDD":
-    #                         df_no_files['EDD_payment_amount'] = "Archivo no encontrado"
-    #                     elif tipo_archivo == "941":
-    #                         df_no_files['941_payment_amount'] = "Archivo no encontrado"
-    #                     elif tipo_archivo == "General":
-    #                         df_no_files['federal_tax_941'] = "Archivo no encontrado"
-    #                         df_no_files['state_tax_edd'] = "Archivo no encontrado"
-
-    #                     df = pd.concat([df, df_no_files], ignore_index=True)
-    #                     week_read = week
-
-    #         print(f"Procesando archivo: {os.path.abspath(file_path)}")
-
-    #         text = self.process_file_with_ocr(file_path)
-    #         with open(os.path.join(folder_path, f'{file_name.replace(".pdf", ".txt")}'), 'w', encoding='utf-8') as txt_file:
-    #             txt_file.write(text)
-
-    #         datos = self.handle_extracted_data(file_name, text, carpeta_cliente, file_path, month, year)
-    #         df = pd.concat([df, datos], ignore_index=True)
-
-    #         # Actualizar el progreso y emitir la señal
-    #         self.processed_files += 1
-    #         progress = int((self.processed_files / total_files) * 100)
-    #         self.progressChanged.emit(progress)
-
-    #     # Convertir master_data a DataFrame
-    #     df_master = pd.DataFrame(master_data, columns=["Company", "TOTAL FEDERAL TAX LIABILITY", "TOTAL STATE TAX"])
-    #     return df, df_master
     def update_master_with_comparisons(self, file_path):
         try:
             # Cargar el archivo Excel
@@ -406,6 +185,11 @@ class FolderProcessor(QObject):
                 company = ws_resumen[f"A{row}"].value  # Columna 'Company'
                 federal_tax = ws_resumen[f"C{row}"].value  # Columna 'Federal Tax'
                 state_tax = ws_resumen[f"D{row}"].value  # Columna 'State Tax'
+
+                # Verificamos que el campo se haya extraido del archivo PDF
+                if (federal_tax in ("Archivo no encontrado", "No se pudo obtener debido al formato del archivo") 
+                    or state_tax in ("Archivo no encontrado", "No se pudo obtener debido al formato del archivo")):
+                    continue
 
                 # Convertir valores a float si no son nulos
                 federal_tax = float(federal_tax.replace(",", "").strip()) if federal_tax else 0
@@ -430,6 +214,9 @@ class FolderProcessor(QObject):
                 company = ws_master[f"A{row}"].value  # Columna 'Company'
                 total_federal_tax = ws_master[f"B{row}"].value  # Columna 'TOTAL FEDERAL TAX LIABILITY'
                 total_state_tax = ws_master[f"C{row}"].value  # Columna 'TOTAL STATE TAX'
+
+                if total_federal_tax == "Archivo no encontrado" or total_state_tax == "Archivo no encontrado":
+                    continue
 
                 # Convertir valores a float si no son nulos
                 total_federal_tax = float(total_federal_tax.replace(",", "").strip()) if total_federal_tax else 0
@@ -484,12 +271,13 @@ class FolderProcessor(QObject):
                     '941_payment_amount', 'EDD_payment_amount', 'account_number', 'date_pay_settle', 'carpeta_cliente']
         df = pd.DataFrame(columns=columnas)
         master_data = []  # Para almacenar los datos de Master.pdf
+        # seteamos week_Read en None para que se limpie la ultima semana leida cada vez que ingresamos a un nuevo cliente
+        week_read = None
 
         # Extraer "Alejandra" desde la ruta
         carpeta_cliente = os.path.basename(os.path.dirname(os.path.dirname(folder_path)))
         print(f"Procesando cliente: {carpeta_cliente}")
 
-        week_read = None
 
         for file_name in os.listdir(folder_path):
             file_path = os.path.join(folder_path, file_name)
@@ -498,7 +286,7 @@ class FolderProcessor(QObject):
                 continue
 
             # Procesar Master.pdf si está en el directorio
-            if file_name == "Master.pdf":
+            if file_name == "Master.pdf" or file_name == "MASTER.pdf":
                 federal_tax, state_tax = self.process_master_pdf(file_path)
                 master_data.append({
                     "Company": carpeta_cliente,  # Ahora correctamente identifica "Alejandra"
@@ -511,32 +299,44 @@ class FolderProcessor(QObject):
             if not file_name[:8].isdigit():
                 continue
 
-            # Verificar la longitud del nombre del archivo sin la extensión
+            # Verificar la longitud del nombre del archivo sin la extensión y si es mayor, 
+            # verificamos que sea alguno de los archivos a leer
             nombre_sin_extension = os.path.splitext(file_name)[0]
             if len(nombre_sin_extension) > 12:
-                continue
-
-            if not any(file_name.endswith(suffix + ".pdf") for suffix in ["EDD", "941", f"{year}"]):
-                continue
-
-            if any(file_name.endswith(suffix + ".pdf") for suffix in ["EDD", "941"]):
-                caracter_nueve = file_name[8]
-                if caracter_nueve != ' ':
+                if not any(file_name.endswith(suffix + ".pdf") for suffix in ["EDD", "941", "943", f"{year}"]):
                     continue
-            elif any(file_name.endswith(suffix + ".pdf") for suffix in [f"{year}"]):
+            
+            # Verificamos que el archivo sean los que tengamos que leer
+            if not any(file_name.endswith(suffix + ".pdf") for suffix in ["EDD", "941", "943", f"{year}"]):
+                continue
+            
+            # Si el archivo es el general, verificamos que el digito 9 no sea el punto . (nos aseguramos formato mmDDyyyy)
+            if any(file_name.endswith(suffix + ".pdf") for suffix in [f"{year}"]):
                 caracter_nueve = file_name[8]
                 if caracter_nueve != '.':
                     continue
 
             # Validamos si hay archivos faltantes para la semana que estamos recorriendo
             week = file_name[:8]
-            look_files = (f"{week} EDD.pdf", f"{week} 941.pdf", f"{week}.pdf")
+            look_files = (f"EDD.pdf", f"941.pdf", f"{week}.pdf")
             if week_read != week:
                 for file in look_files:
-                    file_possible_path = os.path.join(folder_path, file)
-                    if not os.path.isfile(file_possible_path):
+                    archivo_existe = False
+                    for files_name in os.listdir(folder_path):
+                        if file == "941.pdf":
+                            if week in files_name and (file in files_name or "943.pdf" in files_name):
+                                archivo_existe = True
+                                break
+                        else:
+                            if week in files_name and file in files_name:
+                                archivo_existe = True
+                                break
+
+                    # file_possible_path = os.path.join(folder_path, file)
+                    if archivo_existe == False:
                         log.log_info(f"El archivo {file} no existe en la carpeta {folder_path}")
                         tipo_archivo = file.replace(f"{week} ", "").replace(".pdf", "")
+                        tipo_archivo = "941/943" if tipo_archivo == "941" else tipo_archivo
                         tipo_archivo = 'General' if tipo_archivo == week else tipo_archivo
                         df_no_files = pd.DataFrame([{
                             'tipo_archivo': tipo_archivo,
@@ -547,7 +347,7 @@ class FolderProcessor(QObject):
                         # Agregar las columnas específicas dependiendo del tipo de archivo
                         if tipo_archivo == "EDD":
                             df_no_files['EDD_payment_amount'] = "Archivo no encontrado"
-                        elif tipo_archivo == "941":
+                        elif tipo_archivo == "941/943":
                             df_no_files['941_payment_amount'] = "Archivo no encontrado"
                         elif tipo_archivo == "General":
                             df_no_files['federal_tax_941'] = "Archivo no encontrado"
@@ -559,9 +359,6 @@ class FolderProcessor(QObject):
             print(f"Procesando archivo: {os.path.abspath(file_path)}")
 
             text = self.process_file_with_ocr(file_path)
-            with open(os.path.join(folder_path, f'{file_name.replace(".pdf", ".txt")}'), 'w', encoding='utf-8') as txt_file:
-                txt_file.write(text)
-
             datos = self.handle_extracted_data(file_name, text, carpeta_cliente, file_path, month, year)
             df = pd.concat([df, datos], ignore_index=True)
 
@@ -570,11 +367,15 @@ class FolderProcessor(QObject):
             progress = int((self.processed_files / total_files) * 100)
             self.progressChanged.emit(progress)
 
-        # Convertir master_data a DataFrame
+        # Si master_data no se completo (no existe archivo Master) indicamos que no se encontro el archivo
+        if not master_data:
+            master_data.append({
+                "Company": carpeta_cliente,  # Ahora correctamente identifica "Alejandra"
+                "TOTAL FEDERAL TAX LIABILITY": "Archivo no encontrado",
+                "TOTAL STATE TAX": "Archivo no encontrado"
+            })
         df_master = pd.DataFrame(master_data, columns=["Company", "TOTAL FEDERAL TAX LIABILITY", "TOTAL STATE TAX"])
         return df, df_master
-
-
 
     def process_file_with_ocr(self, file_path):
         try:
@@ -600,10 +401,12 @@ class FolderProcessor(QObject):
             except ValueError:
                 return date_str
 
-        if file_name.endswith("941.pdf"):
+        if file_name.endswith("941.pdf") or file_name.endswith("943.pdf"):
+            tipo_archivo = "941" if file_name.endswith("941.pdf") else "943"
+            fecha_pdf = file_name.replace('941.pdf', '') if tipo_archivo == "941" else file_name.replace('943.pdf', '')
             return pd.DataFrame([{
-                'tipo_archivo': "941",
-                'fecha_pdf': file_name.replace('941.pdf', ''),
+                'tipo_archivo': tipo_archivo,
+                'fecha_pdf': fecha_pdf,
                 'Name': look_data.extract_payer_name(text),
                 '941_payment_amount': look_data.extract_payment_amount_941(text),
                 'account_number': look_data.extract_account_number(text),
