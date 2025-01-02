@@ -1,85 +1,126 @@
+
 import os
+import pytesseract
+import fitz  # PyMuPDF para trabajar con PDFs
+from PIL import Image, ImageEnhance, ImageFilter
 import pandas as pd
-
-# def process_weekly_files(folder_path, year, month, total_files, processed_files):
-#     columnas = ['tipo_archivo', 'fecha_pdf', 'Name', 'federal_tax_941', 'state_tax_edd',
-#                     '941_payment_amount', 'EDD_payment_amount', 'account_number', 'date_pay_settle', 'carpeta_cliente']
-#     df = pd.DataFrame(columns=columnas)
-#     carpeta_cliente = os.path.basename(os.path.dirname(os.path.dirname(folder_path)))
-#     print(carpeta_cliente)
-
-#     week_read = None
-#     for file_name in os.listdir(folder_path):
-#         file_path = os.path.join(folder_path, file_name)
-#         df_no_files = pd.DataFrame()
-
-#         if not os.path.isfile(file_path):
-#             continue
-
-#         if not any(file_name.endswith(suffix + ".pdf") for suffix in ["EDD", "941", f"{year}"]):
-#             continue
-        
-#         # Validamos si hay archivos faltantes para la semana que estamos recorriendo
-        
-#         week = file_name[:8]
-#         look_files = (f"{week} EDD.pdf", f"{week} 941.pdf", f"{week}.pdf")
-#         if week_read != week:
-#             for file in look_files: # Ruta completa del archivo file_path = os.path.join(folder_path, file_name)
-#                 file_possible_path = os.path.join(folder_path, file)
-#                 if not os.path.isfile(file_possible_path): 
-#                     print(f"El archivo {file} no existe.")
-#                     df_no_files = pd.DataFrame([{
-#                         'tipo_archivo': "941",
-#                         'fecha_pdf': week,
-#                         'carpeta_cliente': carpeta_cliente,
-#                         'ruta_archivo' : "Archivo no encontrado"
-#                     }])
-#                     week_read = week
-
-#         print(f"Procesando archivo: {os.path.abspath(file_path)}")
-
-#         text = self.process_file_with_ocr(file_path)
-#         datos = self.handle_extracted_data(file_name, text, carpeta_cliente, month, year)
-
-#         df = pd.concat([df, datos], ignore_index=True)
-
-#         # Actualizar el progreso y emitir la señal
-#         self.processed_files += 1
-#         progress = int((self.processed_files / total_files) * 100)
-#         self.progressChanged.emit(progress)
-
-#     df = pd.concat([df, df_no_files], ignore_index=True)
-#     return df
-
+import numpy as np
+# import services.func_extrac_data as look_data  # Asegúrate de que esta ruta sea correcta
+# import utils.app_logger as log
 from openpyxl import load_workbook
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
+import sys
+import re
+from PyQt5.QtCore import QObject, pyqtSignal, QThread
 
-def validation_data(path_file):
-    """
-    Indicamos resaltando con un color que archivos no fueron encontrados en sus carpetas
-    """
-    # Seleccionar archivo Excel
-    excel_path = path_file
-
-    # Abrir el archivo Excel con openpyxl
+def update_master_with_comparisons(file_path):
     try:
-        wb = load_workbook(excel_path)
-        ws = wb['Datos combinados']
+        # Cargar el archivo Excel
+        wb = load_workbook(file_path)
+        ws_resumen = wb['Resumen']
+        ws_master = wb['Master']
 
-        # Definir el color de fondo (amarillo)
-        color_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
-        # Insertar fórmulas en las columnas H y I
-        for row in range(2, ws.max_row + 1):  # Asume que la fila 1 es el encabezado
-            if ws[f"K{row}"].value == "Archivo no encontrado":
-                for col in range(1, 12): # Recorrer todas las celdas en la fila
-                    cell = ws.cell(row=row, column=col)
-                    cell.fill = color_fill
+        # Crear un diccionario para almacenar las sumas por cliente
+        resumen_sums = {}
+        for row in range(2, ws_resumen.max_row + 1):  # Asume que la fila 1 es el encabezado
+            company = ws_resumen[f"A{row}"].value  # Columna 'Company'
+            federal_tax = ws_resumen[f"C{row}"].value  # Columna 'Federal Tax'
+            state_tax = ws_resumen[f"D{row}"].value  # Columna 'State Tax'
 
-        # Guardar cambios
-        wb.save(excel_path)
-        print("Excel modificado con exito.")
+            # Verificamos que el campo se haya extraido del archivo PDF
+            if (federal_tax in ("Archivo no encontrado", "No se pudo obtener debido al formato del archivo") 
+                or state_tax in ("Archivo no encontrado", "No se pudo obtener debido al formato del archivo")):
+                continue
+
+            # Convertir valores a float si no son nulos
+            federal_tax = float(federal_tax.replace(",", "").strip()) if federal_tax else 0
+            state_tax = float(state_tax.replace(",", "").strip()) if state_tax else 0
+
+            if company not in resumen_sums:
+                resumen_sums[company] = {"Federal Tax": 0, "State Tax": 0}
+
+            resumen_sums[company]["Federal Tax"] += federal_tax
+            resumen_sums[company]["State Tax"] += state_tax
+
+        # Agregar columnas adicionales en la hoja 'Master'
+        if "Total Federal Resumen" not in [cell.value for cell in ws_master[1]]:
+            ws_master.cell(row=1, column=ws_master.max_column + 1, value="Total Federal Resumen")
+            ws_master.cell(row=1, column=ws_master.max_column + 1, value="Total State Resumen")
+
+        col_federal_resumen = ws_master.max_column - 1
+        col_state_resumen = ws_master.max_column
+
+        # Actualizar la hoja 'Master'
+        for row in range(2, ws_master.max_row + 1):  # Asume que la fila 1 es el encabezado
+            company = ws_master[f"A{row}"].value  # Columna 'Company'
+            total_federal_tax = ws_master[f"B{row}"].value  # Columna 'TOTAL FEDERAL TAX LIABILITY'
+            total_state_tax = ws_master[f"C{row}"].value  # Columna 'TOTAL STATE TAX'
+
+            if total_federal_tax == "Archivo no encontrado" or total_state_tax == "Archivo no encontrado":
+                continue
+
+            federal_sum = resumen_sums.get(company, {}).get("Federal Tax", 0)
+            state_sum = resumen_sums.get(company, {}).get("State Tax", 0)
+
+            # Actualizar los valores de resumen en las nuevas columnas
+            ws_master.cell(row=row, column=col_federal_resumen).value = federal_sum
+            ws_master.cell(row=row, column=col_state_resumen).value = state_sum
+
+        # Crear un nuevo DataFrame con las columnas existentes y las nuevas diferencias
+        data = [[cell.value for cell in row] for row in ws_master.iter_rows()]
+        df = pd.DataFrame(data[1:], columns=data[0])  # Usar la primera fila como encabezados
+
+        # Agregar las columnas de diferencia al DataFrame si no existen
+        if "Diferencia Federal" not in df.columns:
+            df["Diferencia Federal"] = None
+
+        if "Diferencia State" not in df.columns:
+            df["Diferencia State"] = None
+
+        # Reordenar las columnas según los encabezados deseados
+        headers = [
+            "Company",
+            "TOTAL FEDERAL TAX LIABILITY",
+            "Total Federal Resumen",
+            "Diferencia Federal",
+            "TOTAL STATE TAX",
+            "Total State Resumen",
+            "Diferencia State"
+        ]
+
+        df = df[headers]  # Reordenar las columnas según la lista
+
+        # Sobrescribir la hoja "Master" con las columnas reordenadas
+        for col_num, header in enumerate(headers, start=1):
+            ws_master.cell(row=1, column=col_num, value=header)
+
+        for row_num, row_data in enumerate(df.values, start=2):
+            for col_num, cell_value in enumerate(row_data, start=1):
+                ws_master.cell(row=row_num, column=col_num, value=cell_value)
+
+        for row in range(2, ws_master.max_row + 1):  # Asume que la fila 1 es el encabezado
+            
+            fed_tax_master = ws_master[f"B{row}"].value
+            state_tax_master = ws_master[f"E{row}"].value
+
+            if (fed_tax_master in ("Archivo no encontrado", "No se pudo obtener debido al formato del archivo") 
+                or state_tax_master in ("Archivo no encontrado", "No se pudo obtener debido al formato del archivo")):
+                continue
+
+            fed_tax_resumen = ws_master[f"C{row}"].value
+            state_tax_resumen = ws_master[f"F{row}"].value
+
+            ws_master[f"C{row}"].value = str(fed_tax_resumen).replace(",",".")
+            ws_master[f"F{row}"].value = str(state_tax_resumen).replace(",",".")
+
+            ws_master[f"D{row}"].value = f"=B{row}-C{row}"
+            ws_master[f"G{row}"].value = f"=E{row}-F{row}"
+
+        # Guardar los cambios
+        wb.save(file_path)
+        print(f"Hoja 'Master' actualizada y columnas reordenadas en {file_path}")
     except Exception as e:
-        print("Error al cargar la formula")
+        print(f"Error actualizando la hoja 'Master': {e}")
 
 if __name__ == "__main__":
 
@@ -91,5 +132,5 @@ if __name__ == "__main__":
 
     # df = process_weekly_files(folder_path, year, month, total_files, processed_files)
     # print(df.head())
-    path_excel = r"C:\Users\seba\Desktop\Proyectos\Repo_Leo\procesamiento_archivos\services\carpeta_clientes_unificados\datos_combinados.xlsx"
-    validation_data(path_excel)
+    path_excel = r"C:\Users\seba\Desktop\Proyectos\Repo_Leo\procesamiento_archivos\services\output\2024_Noviembre_dataPDFs.xlsx"
+    update_master_with_comparisons(path_excel)

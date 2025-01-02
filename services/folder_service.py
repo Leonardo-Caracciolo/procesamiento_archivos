@@ -310,20 +310,12 @@ class FolderProcessor(QObject):
                 if total_federal_tax == "Archivo no encontrado" or total_state_tax == "Archivo no encontrado":
                     continue
 
-                # Convertir valores a float si no son nulos
-                total_federal_tax = float(total_federal_tax.replace(",", "").strip()) if total_federal_tax else 0
-                total_state_tax = float(total_state_tax.replace(",", "").strip()) if total_state_tax else 0
-
                 federal_sum = resumen_sums.get(company, {}).get("Federal Tax", 0)
                 state_sum = resumen_sums.get(company, {}).get("State Tax", 0)
 
                 # Actualizar los valores de resumen en las nuevas columnas
                 ws_master.cell(row=row, column=col_federal_resumen).value = federal_sum
                 ws_master.cell(row=row, column=col_state_resumen).value = state_sum
-
-                # Calcular la resta y actualizar las celdas de diferencia
-                ws_master[f"D{row}"].value = federal_sum - total_federal_tax
-                ws_master[f"E{row}"].value = state_sum - total_state_tax
 
             # Crear un nuevo DataFrame con las columnas existentes y las nuevas diferencias
             data = [[cell.value for cell in row] for row in ws_master.iter_rows()]
@@ -356,6 +348,24 @@ class FolderProcessor(QObject):
             for row_num, row_data in enumerate(df.values, start=2):
                 for col_num, cell_value in enumerate(row_data, start=1):
                     ws_master.cell(row=row_num, column=col_num, value=cell_value)
+
+            for row in range(2, ws_master.max_row + 1):  # Asume que la fila 1 es el encabezado
+                
+                fed_tax_master = ws_master[f"B{row}"].value
+                state_tax_master = ws_master[f"E{row}"].value
+
+                if (fed_tax_master in ("Archivo no encontrado", "No se pudo obtener debido al formato del archivo") 
+                    or state_tax_master in ("Archivo no encontrado", "No se pudo obtener debido al formato del archivo")):
+                    continue
+
+                fed_tax_resumen = ws_master[f"C{row}"].value
+                state_tax_resumen = ws_master[f"F{row}"].value
+
+                ws_master[f"C{row}"].value = str(fed_tax_resumen).replace(",",".")
+                ws_master[f"F{row}"].value = str(state_tax_resumen).replace(",",".")
+
+                ws_master[f"D{row}"].value = f"=B{row}-C{row}"
+                ws_master[f"G{row}"].value = f"=E{row}-F{row}"
 
             # Guardar los cambios
             wb.save(file_path)
