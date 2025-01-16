@@ -491,25 +491,48 @@ def extract_payment_date(text):
         return 'No se pudo obtener debido al formato del archivo'
 
 def extract_payment_amount_general_941(text):
-    pattern = r'TOTAL FEDERAL DEPOSIT\s+(\d+\.\d{2})'
-    match = re.search(pattern, text)
+    # Regex existente
+    pattern_existing = r'TOTAL FEDERAL DEPOSIT\s+(\d+\.\d{2})'
+    match_existing = re.search(pattern_existing, text)
     try:
-        if match and match.group(1):
-            print(match.group(1))        
-            return match.group(1)
+        if match_existing and match_existing.group(1):
+            print(match_existing.group(1))
+            return match_existing.group(1)
     except IndexError:
-        print("Error al ejecutar la regex")
+        print("Error al ejecutar la regex existente")
 
+    # Nueva regex para capturar el número anterior al número anterior de "Page"
+    pattern_new = r'(\d{1,3}(?:,\d{3})*\.\d+)\s+(\d{1,3}(?:,\d{3})*\.\d+)\s+Page'
+    match_new = re.search(pattern_new, text)
+    try:
+        if match_new and match_new.group(1):
+            print(match_new.group(1))  # Imprime el número anterior al número anterior de "Page"
+            return match_new.group(1).strip()
+    except IndexError:
+        print("Error al ejecutar la nueva regex")
+    
+    # Si ninguna regex encuentra coincidencias
     return "No se pudo obtener debido al formato del archivo"
 
 def extract_payment_amount_general_edd(text):
-    pattern = r'TOTAL STATE DEPOSIT\s+(\d+\.\d{2})'
-    match = re.search(pattern, text)
+    # Regex existente
+    pattern_existing = r'TOTAL STATE DEPOSIT\s+(\d+\.\d{2})'
+    match_existing = re.search(pattern_existing, text)
     try:
-        if match and match.group(1):
-            return match.group(1)
+        if match_existing and match_existing.group(1):
+            return match_existing.group(1)
     except IndexError:
         print("Error al ejecutar la regex")
+
+    # Nueva regex
+    pattern_new = r'(\d+\.\d+)\s+Page'
+    match_new = re.search(pattern_new, text)
+    try:
+        if match_new and match_new.group(1):
+            # Retorna solo el número limpio
+            return match_new.group(1).strip()
+    except IndexError:
+        print("Error al ejecutar la nueva regex")
 
     return "No se pudo obtener debido al formato del archivo"
 

@@ -1,12 +1,21 @@
 
+import sys
 import os
+
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+current_dir = os.path.abspath(os.path.dirname(__file__))
+if current_dir not in sys.path:
+    sys.path.append(current_dir)
+    
 import pytesseract
 import fitz  # PyMuPDF para trabajar con PDFs
 from PIL import Image, ImageEnhance, ImageFilter
 import pandas as pd
 import numpy as np
-import services.func_extrac_data as look_data  # Asegúrate de que esta ruta sea correcta
-import utils.app_logger as log
+# import services.func_extrac_data as look_data  # Asegúrate de que esta ruta sea correcta
+import func_extrac_data as look_data  # Asegúrate de que esta ruta sea correcta
+# import utils.app_logger as log
+from utils import app_logger as log
 from openpyxl import load_workbook
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 import sys
@@ -150,10 +159,35 @@ class FolderProcessor(QObject):
         # Reemplazar espacios en "mes-numero" para que quede "numero_mes+mes"
         return segment.replace(" ", "")
     
-    def _get_target_path(self, path, year, month, number):
+    
+    #Funcional
+    # def _get_target_path(self, path, year, month, number):
 
-        year_folder = None
+    #     year_folder = None
         
+    #     for root, dirs, files in os.walk(path):
+    #         for name in dirs:
+    #             if str(year) in name and "Payroll" in name:
+    #                 year_folder = os.path.join(root, name)
+    #             elif str(year) in name and "payroll" in name:
+    #                 year_folder = os.path.join(root, name)
+    #             elif str(year) in name:
+    #                     year_folder = os.path.join(root, name)
+
+    #     if year_folder is not None: 
+    #         for root, dirs, files in os.walk(year_folder):
+    #             for name in dirs:
+    #                 if str(number) in name and month in name:
+    #                     return os.path.join(root, name)
+    #                 elif str(number) in name:
+    #                     return os.path.join(root, name)
+    #     return None
+
+
+    def _get_target_path(self, path, year, month, number):
+        year_folder = None
+
+        # Buscar la carpeta del año
         for root, dirs, files in os.walk(path):
             for name in dirs:
                 if str(year) in name and "Payroll" in name:
@@ -161,12 +195,19 @@ class FolderProcessor(QObject):
                 elif str(year) in name and "payroll" in name:
                     year_folder = os.path.join(root, name)
                 elif str(year) in name:
-                        year_folder = os.path.join(root, name)
+                    year_folder = os.path.join(root, name)
 
-        if year_folder is not None: 
+        if year_folder is not None:
+            # Normalizar el mes al formato esperado: número.mes_en_letras (ej. 01.January)
+            formatted_month = f"{number:02d}.{month}"
+            
             for root, dirs, files in os.walk(year_folder):
                 for name in dirs:
-                    if str(number) in name and month in name:
+                    # Coincidencia exacta con número + mes en letras
+                    if formatted_month in name:
+                        return os.path.join(root, name)
+                    # Coincidencia parcial con número o mes en letras
+                    elif str(number) in name and month in name:
                         return os.path.join(root, name)
                     elif str(number) in name:
                         return os.path.join(root, name)
@@ -776,7 +817,13 @@ class FolderProcessor(QObject):
         self.validation_data(file_path)
 
     def translate_month(self, month):
-        return months_translator.get(month, month)
+        normalized_month = month.strip().lower()  # Elimina espacios y pasa a minúsculas
+        for key, value in months_translator.items():
+            if key.lower() == normalized_month or value.lower() == normalized_month:
+                return value  # Devuelve el mes en español
+        return month  # Si no encuentra coincidencias, devuelve el mes original
+        # def translate_month(self, month):
+        #     return months_translator.get(month, month)
     
     def get_month_number(self, month): 
         return months_numbers.get(month, "Mes desconocido")
