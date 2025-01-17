@@ -161,33 +161,10 @@ class FolderProcessor(QObject):
     
     
     #Funcional
-    # def _get_target_path(self, path, year, month, number):
-
-    #     year_folder = None
-        
-    #     for root, dirs, files in os.walk(path):
-    #         for name in dirs:
-    #             if str(year) in name and "Payroll" in name:
-    #                 year_folder = os.path.join(root, name)
-    #             elif str(year) in name and "payroll" in name:
-    #                 year_folder = os.path.join(root, name)
-    #             elif str(year) in name:
-    #                     year_folder = os.path.join(root, name)
-
-    #     if year_folder is not None: 
-    #         for root, dirs, files in os.walk(year_folder):
-    #             for name in dirs:
-    #                 if str(number) in name and month in name:
-    #                     return os.path.join(root, name)
-    #                 elif str(number) in name:
-    #                     return os.path.join(root, name)
-    #     return None
-
-
     def _get_target_path(self, path, year, month, number):
-        year_folder = None
 
-        # Buscar la carpeta del año
+        year_folder = None
+        
         for root, dirs, files in os.walk(path):
             for name in dirs:
                 if str(year) in name and "Payroll" in name:
@@ -195,24 +172,69 @@ class FolderProcessor(QObject):
                 elif str(year) in name and "payroll" in name:
                     year_folder = os.path.join(root, name)
                 elif str(year) in name:
-                    year_folder = os.path.join(root, name)
+                        year_folder = os.path.join(root, name)
 
-        if year_folder is not None:
-            # Normalizar el mes al formato esperado: número.mes_en_letras (ej. 01.January)
-            formatted_month = f"{number:02d}.{month}"
-            
+        if year_folder is not None: 
             for root, dirs, files in os.walk(year_folder):
                 for name in dirs:
-                    # Coincidencia exacta con número + mes en letras
-                    if formatted_month in name:
-                        return os.path.join(root, name)
-                    # Coincidencia parcial con número o mes en letras
-                    elif str(number) in name and month in name:
+                    if str(number) in name and month in name:
                         return os.path.join(root, name)
                     elif str(number) in name:
                         return os.path.join(root, name)
         return None
 
+
+    # def _get_target_path(self, path, year, month, number):
+    #     year_folder = None
+
+    #     # Traducir el mes si está en español
+    #     translated_month = months_translator.get(month, month)
+
+    #     print(f"Iniciando búsqueda en el directorio raíz: {path}")
+        
+    #     # Buscar la carpeta del año
+    #     for root, dirs, files in os.walk(path):
+    #         print(f"Buscando en: {root}")
+    #         for name in dirs:
+    #             print(f"Carpeta encontrada: {name}")
+    #             if str(year) in name and "Payroll" in name:
+    #                 year_folder = os.path.join(root, name)
+    #                 print(f"Carpeta de año seleccionada (con 'Payroll'): {year_folder}")
+    #             elif str(year) in name and "payroll" in name:
+    #                 year_folder = os.path.join(root, name)
+    #                 print(f"Carpeta de año seleccionada (con 'payroll'): {year_folder}")
+    #             elif str(year) in name:
+    #                 year_folder = os.path.join(root, name)
+    #                 print(f"Carpeta de año seleccionada: {year_folder}")
+
+    #     if year_folder is not None:
+    #         # Crear el patrón regex para buscar el mes con diferentes formatos
+    #         formatted_month_patterns = [
+    #             rf"{number:02d}[-.\s]?{translated_month}",   # Ejemplo: 01- January, 01. January, 01 January
+    #             rf"{translated_month}[-.\s]?{number:02d}"   # Ejemplo: January-01, January.01
+    #         ]
+            
+    #         print(f"Patrones de búsqueda generados: {formatted_month_patterns}")
+
+    #         # Buscar dentro de la carpeta del año
+    #         for root, dirs, files in os.walk(year_folder):
+    #             print(f"Buscando dentro de la carpeta del año: {root}")
+    #             for name in dirs:
+    #                 print(f"Evaluando carpeta: {name}")
+    #                 # Intentar coincidir con cada patrón
+    #                 for pattern in formatted_month_patterns:
+    #                     if re.search(pattern, name, re.IGNORECASE):
+    #                         matched_path = os.path.join(root, name)
+    #                         print(f"Carpeta encontrada que coincide: {matched_path}")
+    #                         return matched_path  # Detener la búsqueda al encontrar la primera coincidencia
+            
+    #         # Si no encuentra coincidencias, registrar el error
+    #         print(f"No se encontró ninguna carpeta que coincida en: {year_folder}")
+    #         log.log_info(f"No se encontró carpeta válida en: {year_folder}")
+    #     else:
+    #         print(f"No se encontró ninguna carpeta para el año: {year}")
+
+    #     return None
     # def update_master_with_comparisons(self, file_path):
     #     try:
     #         # Cargar el archivo Excel

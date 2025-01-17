@@ -490,6 +490,29 @@ def extract_payment_date(text):
     except IndexError:
         return 'No se pudo obtener debido al formato del archivo'
 
+# def extract_payment_amount_general_941(text):
+#     # Regex existente
+#     pattern_existing = r'TOTAL FEDERAL DEPOSIT\s+(\d+\.\d{2})'
+#     match_existing = re.search(pattern_existing, text)
+#     try:
+#         if match_existing and match_existing.group(1):
+#             print(match_existing.group(1))
+#             return match_existing.group(1)
+#     except IndexError:
+#         print("Error al ejecutar la regex existente")
+
+#     # Nueva regex para capturar el número anterior al número anterior de "Page"
+#     pattern_new = r'(\d{1,3}(?:,\d{3})*\.\d+)\s+(\d{1,3}(?:,\d{3})*\.\d+)\s+Page'
+#     match_new = re.search(pattern_new, text)
+#     try:
+#         if match_new and match_new.group(1):
+#             print(match_new.group(1))  # Imprime el número anterior al número anterior de "Page"
+#             return match_new.group(1).strip()
+#     except IndexError:
+#         print("Error al ejecutar la nueva regex")
+    
+#     # Si ninguna regex encuentra coincidencias
+#     return "No se pudo obtener debido al formato del archivo"
 def extract_payment_amount_general_941(text):
     # Regex existente
     pattern_existing = r'TOTAL FEDERAL DEPOSIT\s+(\d+\.\d{2})'
@@ -511,9 +534,18 @@ def extract_payment_amount_general_941(text):
     except IndexError:
         print("Error al ejecutar la nueva regex")
     
-    # Si ninguna regex encuentra coincidencias
-    return "No se pudo obtener debido al formato del archivo"
+    # Nueva regex para capturar el monto después de "Total Federal Deposit"
+    pattern_deposit = r'Total Federal Deposit\s+([\d,]+\.\d{2})'
+    match_deposit = re.search(pattern_deposit, text)
+    try:
+        if match_deposit and match_deposit.group(1):
+            print(match_deposit.group(1))  # Imprime el monto después de "Total Federal Deposit"
+            return match_deposit.group(1).strip()
+    except IndexError:
+        print("Error al ejecutar la regex para 'Total Federal Deposit'")
 
+        # Si ninguna regex encuentra coincidencias
+        return "No se pudo obtener debido al formato del archivo"
 def extract_payment_amount_general_edd(text):
     # Regex existente
     pattern_existing = r'TOTAL STATE DEPOSIT\s+(\d+\.\d{2})'
@@ -522,9 +554,9 @@ def extract_payment_amount_general_edd(text):
         if match_existing and match_existing.group(1):
             return match_existing.group(1)
     except IndexError:
-        print("Error al ejecutar la regex")
+        print("Error al ejecutar la regex existente")
 
-    # Nueva regex
+    # Regex para capturar el monto antes de "Page"
     pattern_new = r'(\d+\.\d+)\s+Page'
     match_new = re.search(pattern_new, text)
     try:
@@ -534,6 +566,16 @@ def extract_payment_amount_general_edd(text):
     except IndexError:
         print("Error al ejecutar la nueva regex")
 
+    # Nueva regex para capturar el monto después de "Total State Deposit"
+    pattern_state = r'Total State Deposit\s+([\d,]+\.\d{2})'
+    match_state = re.search(pattern_state, text)
+    try:
+        if match_state and match_state.group(1):
+            return match_state.group(1).strip()
+    except IndexError:
+        print("Error al ejecutar la regex para 'Total State Deposit'")
+
+    # Si ninguna regex encuentra coincidencias
     return "No se pudo obtener debido al formato del archivo"
 
 def extract_company_name(text):
@@ -554,7 +596,8 @@ def extract_company_name(text):
         r'TAXPAYER NAME:\s*(.*?)(?=\s*TIN:)',          # Patrón principal
         r'TAXPAYER NAME:\s*(.*)',          # Patrón secundario
         r'TAXPAYER NANE:\s*(.*?)(?=\s*TIN:)',  # Patrón alternativo en español
-        r'Taxpayer Name:.*?(?=\s*ñ)'
+        r'Taxpayer Name:.*?(?=\s*ñ)',
+        r'(?m)^(.*)\s+Page'
     ]
     
     for pattern in patterns:
