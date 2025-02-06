@@ -62,34 +62,34 @@ class FolderProcessor(QObject):
 
 
 
-def process_master_pdf(self, file_path):
-    try:
-        pdf_document = fitz.open(file_path)
-        federal_tax, state_tax = None, None
+    def process_master_pdf(self, file_path):
+        try:
+            pdf_document = fitz.open(file_path)
+            federal_tax, state_tax = None, None
 
-        # Procesar anteúltima página
-        if len(pdf_document) >= 2:
-            penultimate_page = pdf_document[-2]
-            text = penultimate_page.get_text()
+            # Procesar anteúltima página
+            if len(pdf_document) >= 2:
+                penultimate_page = pdf_document[-2]
+                text = penultimate_page.get_text()
+                
+                # Buscar Total Federal Tax Liability con la nueva RegEx
+                match = re.search(r"(?:Amount(?:\s+\d{1,3}(?:,\d{3})*\.\d{2}){7})\s+(\d{1,3}(?:,\d{3})*\.\d{2})", text)
+                if match:
+                    federal_tax = match.group(1)
+
+            # Procesar última página
+            last_page = pdf_document[-1]
+            text = last_page.get_text()
             
-            # Buscar Total Federal Tax Liability con la nueva RegEx
-            match = re.search(r"(?:Amount(?:\s+\d{1,3}(?:,\d{3})*\.\d{2}){7})\s+(\d{1,3}(?:,\d{3})*\.\d{2})", text)
+            # Buscar Total State Tax con la nueva RegEx
+            match = re.search(r"Amount(?:\s+\d{1,3}(?:,\d{3})*\.\d{2}){2}\s+(\d{1,3}(?:,\d{3})*\.\d{2})(?![\s\S]*Amount)", text)
             if match:
-                federal_tax = match.group(1)
+                state_tax = match.group(1)
 
-        # Procesar última página
-        last_page = pdf_document[-1]
-        text = last_page.get_text()
-        
-        # Buscar Total State Tax con la nueva RegEx
-        match = re.search(r"Amount(?:\s+\d{1,3}(?:,\d{3})*\.\d{2}){2}\s+(\d{1,3}(?:,\d{3})*\.\d{2})(?![\s\S]*Amount)", text)
-        if match:
-            state_tax = match.group(1)
-
-        return federal_tax, state_tax
-    except Exception as e:
-        log.log_error(f"Error procesando Master.pdf: {e}")
-        return None, None
+            return federal_tax, state_tax
+        except Exception as e:
+            log.log_error(f"Error procesando Master.pdf: {e}")
+            return None, None
         
     def save_master_to_excel(self, file_path, master_data):
         try:
