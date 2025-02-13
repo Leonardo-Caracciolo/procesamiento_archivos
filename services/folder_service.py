@@ -1,7 +1,7 @@
 
 import sys
 import os
-
+from pytesseract import image_to_string
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 current_dir = os.path.abspath(os.path.dirname(__file__))
 if current_dir not in sys.path:
@@ -61,35 +61,64 @@ class FolderProcessor(QObject):
         os.makedirs(output_folder, exist_ok=True)  # Crear carpeta de salida si no existe
 
 
-
     def process_master_pdf(self, file_path):
         try:
             pdf_document = fitz.open(file_path)
             federal_tax, state_tax = None, None
+            extracted_text = ""
 
-            # Procesar anteúltima página
-            if len(pdf_document) >= 2:
-                penultimate_page = pdf_document[-2]
-                text = penultimate_page.get_text()
-                
-                # Buscar Total Federal Tax Liability con la nueva RegEx
-                match = re.search(r"(?:Amount(?:\s+\d{1,3}(?:,\d{3})*\.\d{2}){7})\s+(\d{1,3}(?:,\d{3})*\.\d{2})", text)
-                if match:
-                    federal_tax = match.group(1)
+            # Obtener la carpeta "anterior a la carpeta actual" (Ejemplo: Payroll 2025 o 2025)
+            parent_folder = os.path.basename(os.path.dirname(os.path.dirname(file_path)))
 
-            # Procesar última página
-            last_page = pdf_document[-1]
-            text = last_page.get_text()
+            # Si la carpeta anterior es "Payroll 2025" o "2025", usar OCR en TODAS las páginas
+            if parent_folder in ["Payroll 2025", "2025"]:
+                for page_number in range(len(pdf_document)):
+                    # Extraer cada página como imagen con DPI alto
+                    page = pdf_document[page_number]
+                    pix = page.get_pixmap(dpi=300)
+                    image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+
+                    # Extraer texto con OCR y agregar identificador de página
+                    extracted_text += f"--- Página {page_number + 1} ---\n"
+                    extracted_text += image_to_string(image, lang='spa', config='--dpi 300') + "\n"
+
+            else:
+                # Procesar anteúltima y última página con PyMuPDF (sin OCR)
+                if len(pdf_document) >= 2:
+                    penultimate_page = pdf_document[-2]
+                    extracted_text += f"--- Página {len(pdf_document)-1} ---\n"
+                    extracted_text += penultimate_page.get_text() + "\n"
+
+                last_page = pdf_document[-1]
+                extracted_text += f"--- Página {len(pdf_document)} ---\n"
+                extracted_text += last_page.get_text() + "\n"
+
+            # **NORMALIZACIÓN DEL TEXTO** para que las expresiones regulares funcionen correctamente
+            normalized_text = re.sub(r'\n+', ' ', extracted_text)  # Reemplaza múltiples \n por un solo espacio
+            normalized_text = re.sub(r'\s+', ' ', normalized_text).strip()  # Reemplaza múltiples espacios
+
+            # Aplicar RegEx en el texto normalizado
+            match_federal = re.search(r"Total Federal Tax Liability\s+([\d,]+\.\d{2})", normalized_text)
+            if not match_federal:
+                match_federal = re.search(r"(?:Amount(?:\s+\d{1,3}(?:,\d{3})*\.\d{2}){7})\s+(\d{1,3}(?:,\d{3})*\.\d{2})", normalized_text)
             
-            # Buscar Total State Tax con la nueva RegEx
-            match = re.search(r"Amount(?:\s+\d{1,3}(?:,\d{3})*\.\d{2}){2}\s+(\d{1,3}(?:,\d{3})*\.\d{2})(?![\s\S]*Amount)", text)
-            if match:
-                state_tax = match.group(1)
+            if match_federal:
+                federal_tax = match_federal.group(1)
+
+            match_state = re.search(r"Total State Tax\s+([\d,]+\.\d{2})", normalized_text)
+            if not match_state:
+                match_state = re.search(r"Amount(?:\s+\d{1,3}(?:,\d{3})*\.\d{2}){2}\s+(\d{1,3}(?:,\d{3})*\.\d{2})(?![\s\S]*Amount)", normalized_text)
+            
+            if match_state:
+                state_tax = match_state.group(1)
 
             return federal_tax, state_tax
+
         except Exception as e:
             log.log_error(f"Error procesando Master.pdf: {e}")
             return None, None
+
+
         
     def save_master_to_excel(self, file_path, master_data):
         try:
@@ -461,7 +490,7 @@ class FolderProcessor(QObject):
                 continue
 
             # Procesar Master.pdf si está en el directorio
-            if file_name == "Master.pdf" or file_name == "MASTER.pdf":
+            if file_name == "Master.pdf" or file_name == "MASTER.pdf" or "MASTER.PDF" in file_name.upper():
                 federal_tax, state_tax = self.process_master_pdf(file_path)
                 master_data.append({
                     "Company": carpeta_cliente,  # Ahora correctamente identifica "Alejandra"
