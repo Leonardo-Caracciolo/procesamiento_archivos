@@ -61,6 +61,64 @@ class FolderProcessor(QObject):
         os.makedirs(output_folder, exist_ok=True)  # Crear carpeta de salida si no existe
 
 
+    # def process_master_pdf(self, file_path):
+    #     try:
+    #         pdf_document = fitz.open(file_path)
+    #         federal_tax, state_tax = None, None
+    #         extracted_text = ""
+
+    #         # Obtener la carpeta "anterior a la carpeta actual" (Ejemplo: Payroll 2025 o 2025)
+    #         parent_folder = os.path.basename(os.path.dirname(os.path.dirname(file_path)))
+
+    #         # Si la carpeta anterior es "Payroll 2025" o "2025", usar OCR en TODAS las páginas
+    #         if parent_folder in ["Payroll 2025", "2025"]:
+    #             for page_number in range(len(pdf_document)):
+    #                 # Extraer cada página como imagen con DPI alto
+    #                 page = pdf_document[page_number]
+    #                 pix = page.get_pixmap(dpi=300)
+    #                 image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+
+    #                 # Extraer texto con OCR y agregar identificador de página
+    #                 extracted_text += f"--- Página {page_number + 1} ---\n"
+    #                 extracted_text += image_to_string(image, lang='spa', config='--dpi 300') + "\n"
+
+    #         else:
+    #             # Procesar anteúltima y última página con PyMuPDF (sin OCR)
+    #             if len(pdf_document) >= 2:
+    #                 penultimate_page = pdf_document[-2]
+    #                 extracted_text += f"--- Página {len(pdf_document)-1} ---\n"
+    #                 extracted_text += penultimate_page.get_text() + "\n"
+
+    #             last_page = pdf_document[-1]
+    #             extracted_text += f"--- Página {len(pdf_document)} ---\n"
+    #             extracted_text += last_page.get_text() + "\n"
+
+    #         # **NORMALIZACIÓN DEL TEXTO** para que las expresiones regulares funcionen correctamente
+    #         normalized_text = re.sub(r'\n+', ' ', extracted_text)  # Reemplaza múltiples \n por un solo espacio
+    #         normalized_text = re.sub(r'\s+', ' ', normalized_text).strip()  # Reemplaza múltiples espacios
+
+    #         # Aplicar RegEx en el texto normalizado
+    #         match_federal = re.search(r"Total Federal Tax Liability\s+([\d,]+\.\d{2})", normalized_text)
+    #         if not match_federal:
+    #             match_federal = re.search(r"(?:Amount(?:\s+\d{1,3}(?:,\d{3})*\.\d{2}){7})\s+(\d{1,3}(?:,\d{3})*\.\d{2})", normalized_text)
+            
+    #         if match_federal:
+    #             federal_tax = match_federal.group(1)
+
+    #         match_state = re.search(r"Total State Tax\s+([\d,]+\.\d{2})", normalized_text)
+    #         if not match_state:
+    #             match_state = re.search(r"Amount(?:\s+\d{1,3}(?:,\d{3})*\.\d{2}){2}\s+(\d{1,3}(?:,\d{3})*\.\d{2})(?![\s\S]*Amount)", normalized_text)
+            
+    #         if match_state:
+    #             state_tax = match_state.group(1)
+
+    #         return federal_tax, state_tax
+
+    #     except Exception as e:
+    #         log.log_error(f"Error procesando Master.pdf: {e}")
+    #         return None, None
+
+
     def process_master_pdf(self, file_path):
         try:
             pdf_document = fitz.open(file_path)
@@ -97,15 +155,53 @@ class FolderProcessor(QObject):
             normalized_text = re.sub(r'\n+', ' ', extracted_text)  # Reemplaza múltiples \n por un solo espacio
             normalized_text = re.sub(r'\s+', ' ', normalized_text).strip()  # Reemplaza múltiples espacios
 
-            # Aplicar RegEx en el texto normalizado
+            # **RegEx 1: Buscar directamente "Total Federal Tax Liability"**
             match_federal = re.search(r"Total Federal Tax Liability\s+([\d,]+\.\d{2})", normalized_text)
-            if not match_federal:
-                match_federal = re.search(r"(?:Amount(?:\s+\d{1,3}(?:,\d{3})*\.\d{2}){7})\s+(\d{1,3}(?:,\d{3})*\.\d{2})", normalized_text)
-            
-            if match_federal:
-                federal_tax = match_federal.group(1)
 
+            # **RegEx 2: Si no se encuentra, buscar el anteúltimo monto del séptimo bloque después de "Amount"**
+            if not match_federal:
+                match_amount_block = re.search(r"Amount\s*Page.*?\n([\s\S]+?)\d{1,2}/\d{1,2}/\d{4}", normalized_text)
+                
+                if match_amount_block:
+                    # Extraer la sección de montos
+                    montos_seccion = match_amount_block.group(1).strip()
+
+                    # Dividir en bloques usando saltos de línea dobles
+                    bloques = [b.strip().split() for b in montos_seccion.split("\n\n") if b.strip()]
+
+                    if len(bloques) >= 7:
+                        bloque_7 = bloques[6]  # Séptimo bloque (índice 6)
+
+                        if len(bloque_7) >= 2:
+                            federal_tax = bloque_7[-2]  # Anteúltimo monto del bloque 7
+
+            # **RegEx 3: Si aún no se encontró, obtener el anteúltimo monto del tercer bloque después del último "Amount"**
+            if not federal_tax:
+                # Dividir el texto en bloques usando "Amount"
+                bloques = normalized_text.split("Amount")
+
+                # Asegurar que haya suficientes bloques (para acceder a bloques[3])
+                if len(bloques) > 3:
+                    bloque_objetivo = bloques[3].strip()  # Tomar el tercer bloque después del último "Amount"
+
+                    # Extraer todos los montos del bloque
+                    montos = re.findall(r"[\d,]+\.\d{2}", bloque_objetivo)
+
+                    if len(montos) >= 2:
+                        federal_tax = montos[-2]  # **Anteúltimo monto en el bloque**
+
+            # **RegEx 4: Nueva regex optimizada para evitar timeouts**
+            if not federal_tax:
+                regex_federal_optimized = r"Amount\s+(?:[\d,]+\.\d{2}\s+){7}([\d,]+\.\d{2})"
+                match_federal = re.search(regex_federal_optimized, normalized_text)
+
+                if match_federal:
+                    federal_tax = match_federal.group(1)  # **Anteúltimo monto en el tercer bloque después del último "Amount"**
+
+            # **RegEx 5: Extraer Total State Tax**
             match_state = re.search(r"Total State Tax\s+([\d,]+\.\d{2})", normalized_text)
+
+            # **RegEx 6: Si no se encuentra directamente, buscarlo en la estructura del documento**
             if not match_state:
                 match_state = re.search(r"Amount(?:\s+\d{1,3}(?:,\d{3})*\.\d{2}){2}\s+(\d{1,3}(?:,\d{3})*\.\d{2})(?![\s\S]*Amount)", normalized_text)
             
@@ -117,7 +213,6 @@ class FolderProcessor(QObject):
         except Exception as e:
             log.log_error(f"Error procesando Master.pdf: {e}")
             return None, None
-
 
         
     def save_master_to_excel(self, file_path, master_data):
